@@ -22,7 +22,7 @@ var Fractal2D = (function() {
     this.b = b || 0;
   };
 
-  Complex.prototype.mod2 = function(complex) {
+  Complex.prototype.mod2 = function() {
     return this.a * this.a + this.b * this.b;
   };
 
