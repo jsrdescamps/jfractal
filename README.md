@@ -1,4 +1,4 @@
-# JsFractalFenerator
+# JsFractalGenerator
 
 A small javascript library to generate a 2D fractal.
 
