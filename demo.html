@@ -5,11 +5,12 @@
   <title>JsFractalGenerator Demo</title>
 </head>
 <body>
+  <em>Click to zoom on the picture</em><br>
   <canvas id="canvas" width="600" height="600"></canvas>
   <script src="palette.js"></script>
   <script src="fractal.js"></script>
   <script>
-  fractal = new Fractal2D.Fractal(
+  new Fractal2D.Fractal(
       new Fractal2D.Complex(-0.7, 0.27015),
       150,
       new Fractal2D.Image("canvas"),
@@ -19,8 +20,7 @@
         new Palette.Color(255, 255, 255, 255),
         new Palette.Color(255, 102, 0, 255)
       ])
-  );
-  fractal.draw();
+  ).draw();
   </script>
 </body>
 </html>
