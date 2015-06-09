@@ -1,13 +1,13 @@
 /**
  * Small library to generate 2D fractals
  *
- * @version 0.1.0
+ * @version 0.2.0
  * @author Julien Descamps
  * @todo Documentation
- * @todo Add smooth iteration option
  * @todo Add default parameters
+ * @todo Add progressive display
+ * @todo Add field lines
  * @todo Add interactive parameters into demo (setters/getters)
- * @todo Add Mandelbrot
  * @todo Manage exceptions
  * @todo Use Web Workers
  */
@@ -26,6 +26,10 @@ var Fractal2D = (function() {
     return this.a * this.a + this.b * this.b;
   };
 
+  Complex.prototype.mod = function() {
+    return Math.sqrt(this.a * this.a + this.b * this.b);
+  };
+
   /*********************
    * 2D position class *
    *********************/
@@ -35,11 +39,17 @@ var Fractal2D = (function() {
     this.y = y || 0;
   };
 
+  /**
+   * @todo use callback ?
+   */
   Position.prototype.zoom = function(position, factor) {
     this.x = position.x * (1 - factor) + this.x * factor;
     this.y = position.y * (1 - factor) + this.y * factor;
   };
 
+  /**
+   * @todo use callback ?
+   */
   Position.prototype.translate = function(origin, position) {
     this.x -= (position.x - origin.x);
     this.y -= (position.y - origin.y);
@@ -49,6 +59,9 @@ var Fractal2D = (function() {
    * Image management class *
    **************************/
 
+  /**
+   * @todo Do it with Position class ?
+   */
   ImageData.prototype.setPixel = function(x, y, color) {
     var index = (x + y * this.width) * 4;
     this.data[index + 0] = color.r;
@@ -58,11 +71,10 @@ var Fractal2D = (function() {
   };
 
   var Image = function(canvasId) {
-    this.canvas = document.getElementById(canvasId);
-
-    this.ctx = this.canvas.getContext("2d");
-    this.width = this.canvas.width;
-    this.height = this.canvas.height;
+    this.canvas    = document.getElementById(canvasId);
+    this.ctx       = this.canvas.getContext("2d");
+    this.width     = this.canvas.width;
+    this.height    = this.canvas.height;
     this.imageData = this.ctx.createImageData(this.width, this.height);
   };
 
@@ -94,62 +106,107 @@ var Fractal2D = (function() {
     this.canvas.addEventListener("click", callback, false);
   };
 
+  /********************************
+   * Fractal algorithm interfaces *
+   ********************************/
+
+  var JuliaAlgo = function(maxIter, smoothing, c) {
+    this.maxIter      = maxIter;
+    this.smoothing    = smoothing;
+    this.isMandelbrot = c === undefined;
+    this.c            = c;
+  };
+
+  JuliaAlgo.prototype.iterate = function(z) {
+    var iter = 0, tmp = 0, frac = 0, bailout = 4;
+
+    if (this.isMandelbrot) {
+      this.c = new Complex(z.a, z.b);
+    }
+    if (this.smoothing) {
+      bailout = 1 << 16;
+    }
+    while (z.mod2() <= bailout && iter < this.maxIter) {
+      tmp = z.a * z.a - z.b * z.b + this.c.a;
+      z.b = 2 * z.a * z.b + this.c.b;
+      z.a = tmp;
+      iter++;
+    }
+    if (this.smoothing) {
+      frac = 1 - Math.log(Math.log(z.mod())/Math.log(2))/Math.log(2);
+    }
+    return {
+      floorValue  : iter,
+      smoothValue : iter + frac
+    };
+  };
+
   /*********************************
    * Main Fractal generation class *
    *********************************/
+  /**
+   * @todo Manage defaults
+   */
+  var Fractal = function(image, mainColor, colorMap, algorithm) {
+    this.image        = image;
+    this.mainColor    = mainColor;
+    this.colorMap     = colorMap;
+    this.algorithm    = algorithm;
+    this.origin       = new Position(this.image.width / 2, this.image.height / 2);
+    this.position     = new Position(this.origin.x, this.origin.y);
+    this.zoomFactor   = 2;
+    this.imRange      = 3;
+    this.reRange      = 3;
+    this.scaleFactorX = this.reRange / this.image.width;
+    this.scaleFactorY = this.imRange / this.image.height;
+    var that          = this;
 
-  var Fractal = function(seed, maxIter, image, mainColor, colorMap) {
-    this.seed = seed;
-    this.maxIter = maxIter;
-    this.image = image;
-    this.mainColor = mainColor;
-    this.colorMap = colorMap;
-
-    this.centerPos = new Position(this.image.width / 2, this.image.height / 2);
-    this.translatedPos = new Position(this.centerPos.x, this.centerPos.y);
-
-    this.zoomFactor = 1.5;
-    this.scaleFactor = 3 / this.image.width;
-
-    var that = this;
     this.image.addClickListener(
       function(e) {
-        that.draw(new Position(
+        cursor = new Position(
           that.image.getCursorPosition(e).x,
-          that.image.getCursorPosition(e).y), true);
+          that.image.getCursorPosition(e).y
+        );
+        that.translate(cursor).zoom(cursor).draw();
       }
     );
   };
 
-  Fractal.prototype.draw = function(toCenterPos, zoomEnabled) {
-    var z = new Complex();
+  Fractal.prototype.setZoomFactor = function(zoomFactor) {
+    this.zoomFactor = zoomFactor;
 
-    if (!toCenterPos) {
-      toCenterPos = this.centerPos;
-    }
-    this.translatedPos.translate(this.centerPos, toCenterPos);
+    return this;
+  };
 
-    if (zoomEnabled) {
-      this.scaleFactor /= this.zoomFactor;
-      this.translatedPos.zoom(this.centerPos, this.zoomFactor);
-    }
-    for (var y = 0; y < this.image.height; y++) {
-      for (var x = 0; x < this.image.width; x++) {
-        var iter = 0;
+  Fractal.prototype.setReRange = function(reRange) {
+    this.reRange = reRange;
 
-        z.a = this.scaleFactor * (x - this.translatedPos.x);
-        z.b = this.scaleFactor * (y - this.translatedPos.y);
+    return this;
+  };
 
-        while (z.mod2() <= 4 && iter < this.maxIter) {
-          var tmp = z.a * z.a - z.b * z.b + this.seed.a;
-          z.b = 2 * z.a * z.b + this.seed.b;
-          z.a = tmp;
-          iter++;
-        }
-        if (iter == this.maxIter) {
+  Fractal.prototype.setImRange = function(imRange) {
+    this.imRange = imRange;
+
+    return this;
+  };
+
+  /**
+   *
+   */
+  Fractal.prototype.draw = function() {
+    var x, y;
+
+    for (y = 0; y < this.image.height; y++) {
+      for (x = 0; x < this.image.width; x++) {
+        bailIter = this.algorithm.iterate(
+          new Complex(
+            this.scaleFactorX * (x - this.position.x),
+            this.scaleFactorY * (y - this.position.y))
+        );
+        if (bailIter.floorValue == this.algorithm.maxIter) {
           this.image.setPixel(x, y, this.mainColor);
         } else {
-          color = this.colorMap.getColor(iter / this.maxIter);
+          color = this.colorMap.getColor(bailIter.smoothValue / this.algorithm.maxIter);
           this.image.setPixel(x, y, color);
         }
       }
@@ -157,9 +214,25 @@ var Fractal2D = (function() {
     this.image.draw();
   };
 
+  Fractal.prototype.zoom = function(position) {
+    this.scaleFactorX /= this.zoomFactor;
+    this.scaleFactorY /= this.zoomFactor;
+    this.position.zoom(this.origin, this.zoomFactor);
+
+    return this;
+  };
+
+  Fractal.prototype.translate = function(position) {
+    this.position.translate(this.origin, position);
+
+    return this;
+  };
+
   return {
-    Fractal: Fractal,
-    Complex : Complex,
-    Image: Image
+    Fractal   : Fractal,
+    Position  : Position,
+    Complex   : Complex,
+    Image     : Image,
+    JuliaAlgo : JuliaAlgo,
   };
 }());

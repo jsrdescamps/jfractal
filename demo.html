@@ -6,20 +6,31 @@
 </head>
 <body>
   <em>Click to zoom on the picture</em><br>
-  <canvas id="canvas" width="600" height="600"></canvas>
+  <canvas id="canvas" width="800" height="800"></canvas>
   <script src="palette.js"></script>
   <script src="fractal.js"></script>
   <script>
   new Fractal2D.Fractal(
-      new Fractal2D.Complex(-0.7, 0.27015),
-      150,
       new Fractal2D.Image("canvas"),
       new Palette.Color(0, 0, 0, 255),
-      new Palette.ColorMap(128, [
+      new Palette.ColorMap(1024, [
         new Palette.Color(0, 0, 102, 255),
         new Palette.Color(255, 255, 255, 255),
         new Palette.Color(255, 102, 0, 255)
-      ])
+      ]),
+      new Fractal2D.JuliaAlgo(
+        200,
+        true,
+        //new Fractal2D.Complex(0.285, 0)
+        //new Fractal2D.Complex(-1.476, 0)
+        //new Fractal2D.Complex(-0.79, 0.15)
+        //new Fractal2D.Complex(0.11031, -0.67037)
+        //new Fractal2D.Complex(0, 1)
+        new Fractal2D.Complex(-0.194, 0.6557)
+        //new Fractal2D.Complex(-0.12, 0.74)
+        //new Fractal2D.Complex(0.27334, 0.00742)
+        //new Fractal2D.Complex(-0.7, 0.27015)
+      )
   ).draw();
   </script>
 </body>
