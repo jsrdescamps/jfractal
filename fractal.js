@@ -1,7 +1,7 @@
 /**
  * Small library to generate 2D fractals
  *
- * @version 0.2.0
+ * @version 0.3.0
  * @author Julien Descamps
  * @todo Documentation
  * @todo Add default parameters
@@ -55,6 +55,16 @@ var Fractal2D = (function() {
     this.y -= (position.y - origin.y);
   };
 
+  /**
+   * @todo use callback ?
+   */
+  Position.prototype.toComplex = function(factor, position) {
+    return new Complex(
+      factor.x * (this.x - position.x),
+      factor.y * (this.y - position.y)
+    );
+  };
+
   /**************************
    * Image management class *
    **************************/
@@ -102,10 +112,6 @@ var Fractal2D = (function() {
     return position;
   };
 
-  Image.prototype.addClickListener = function(callback) {
-    this.canvas.addEventListener("click", callback, false);
-  };
-
   /********************************
    * Fractal algorithm interfaces *
    ********************************/
@@ -148,28 +154,18 @@ var Fractal2D = (function() {
    * @todo Manage defaults
    */
   var Fractal = function(image, mainColor, colorMap, algorithm) {
-    this.image        = image;
-    this.mainColor    = mainColor;
-    this.colorMap     = colorMap;
-    this.algorithm    = algorithm;
-    this.origin       = new Position(this.image.width / 2, this.image.height / 2);
-    this.position     = new Position(this.origin.x, this.origin.y);
-    this.zoomFactor   = 2;
-    this.imRange      = 3;
-    this.reRange      = 3;
-    this.scaleFactorX = this.reRange / this.image.width;
-    this.scaleFactorY = this.imRange / this.image.height;
-    var that          = this;
-
-    this.image.addClickListener(
-      function(e) {
-        cursor = new Position(
-          that.image.getCursorPosition(e).x,
-          that.image.getCursorPosition(e).y
-        );
-        that.translate(cursor).zoom(cursor).draw();
-      }
-    );
+    this.image       = image;
+    this.mainColor   = mainColor;
+    this.colorMap    = colorMap;
+    this.algorithm   = algorithm;
+    this.origin      = new Position(this.image.width / 2, this.image.height / 2);
+    this.position    = new Position(this.origin.x, this.origin.y);
+    this.zoomFactor  = 2;
+    this.range       = { a: 3, b: 3};
+    this.scaleFactor = {
+      x: this.range.a / this.image.width,
+      y: this.range.b / this.image.height
+    };
   };
 
   Fractal.prototype.setZoomFactor = function(zoomFactor) {
@@ -178,16 +174,22 @@ var Fractal2D = (function() {
     return this;
   };
 
-  Fractal.prototype.setReRange = function(reRange) {
-    this.reRange = reRange;
+  Fractal.prototype.setRange = function(range) {
+    this.range = range;
 
     return this;
   };
 
-  Fractal.prototype.setImRange = function(imRange) {
-    this.imRange = imRange;
+  Fractal.prototype.getZoom = function() {
+    return this.range.a / (this.image.width * this.scaleFactor.x);
+  };
 
-    return this;
+  Fractal.prototype.getPosition = function() {
+    return this.position;
+  };
+
+  Fractal.prototype.getComplex = function() {
+    return this.position.toComplex(this.scaleFactor, this.origin);
   };
 
   /**
@@ -199,9 +201,7 @@ var Fractal2D = (function() {
     for (y = 0; y < this.image.height; y++) {
       for (x = 0; x < this.image.width; x++) {
         bailIter = this.algorithm.iterate(
-          new Complex(
-            this.scaleFactorX * (x - this.position.x),
-            this.scaleFactorY * (y - this.position.y))
+          new Position(x, y).toComplex(this.scaleFactor, this.position)
         );
         if (bailIter.floorValue == this.algorithm.maxIter) {
           this.image.setPixel(x, y, this.mainColor);
@@ -215,8 +215,8 @@ var Fractal2D = (function() {
   };
 
   Fractal.prototype.zoom = function(position) {
-    this.scaleFactorX /= this.zoomFactor;
-    this.scaleFactorY /= this.zoomFactor;
+    this.scaleFactor.x /= this.zoomFactor;
+    this.scaleFactor.y /= this.zoomFactor;
     this.position.zoom(this.origin, this.zoomFactor);
 
     return this;

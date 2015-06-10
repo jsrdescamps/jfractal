@@ -5,12 +5,15 @@
   <title>JsFractalGenerator Demo</title>
 </head>
 <body>
-  <em>Click to zoom on the picture</em><br>
-  <canvas id="canvas" width="800" height="800"></canvas>
+  Click to zoom on the picture<br>
+  Complex z = <span id="z-re"></span> + <span id="z-im"></span> i<br>
+  Zoom = <span id="zoom"></span>x<br>
+  <canvas id="canvas" width="600" height="600"></canvas>
+
   <script src="palette.js"></script>
   <script src="fractal.js"></script>
   <script>
-  new Fractal2D.Fractal(
+  var fractal = new Fractal2D.Fractal(
       new Fractal2D.Image("canvas"),
       new Palette.Color(0, 0, 0, 255),
       new Palette.ColorMap(1024, [
@@ -31,7 +34,29 @@
         //new Fractal2D.Complex(0.27334, 0.00742)
         //new Fractal2D.Complex(-0.7, 0.27015)
       )
-  ).draw();
+  );
+  fractal.draw();
+
+  var updateData = function() {
+    var complex = fractal.getComplex();
+    document.getElementById('z-re').innerHTML = complex.a;
+    document.getElementById('z-im').innerHTML = complex.b;
+    document.getElementById('zoom').innerHTML = fractal.getZoom();
+  };
+  updateData();
+
+  document.getElementById('canvas').addEventListener(
+    'click',
+    function(e) {
+      var cursor = new Fractal2D.Position(
+        fractal.image.getCursorPosition(e).x,
+        fractal.image.getCursorPosition(e).y
+      );
+      fractal.translate(cursor).zoom(cursor).draw();
+      updateData();
+    },
+    false
+  );
   </script>
 </body>
 </html>
