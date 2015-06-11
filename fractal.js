@@ -14,6 +14,23 @@
 var Fractal2D = (function() {
 
   /************************
+   * Helper class *
+   ************************/
+
+  Array.matrix = function (rows, columns, initial) {
+      var a, i, j, matrix = [];
+
+      for (i = 0; i < rows; i ++) {
+          a = [];
+          for (j = 0; j < columns; j ++) {
+              a[j] = initial;
+          }
+          matrix[i] = a;
+      }
+      return matrix;
+  };
+
+  /************************
    * Complex number class *
    ************************/
 
@@ -80,8 +97,8 @@ var Fractal2D = (function() {
     this.data[index + 3] = color.a;
   };
 
-  var Image = function(canvasId) {
-    this.canvas    = document.getElementById(canvasId);
+  var Image = function(canvas) {
+    this.canvas    = canvas;
     this.ctx       = this.canvas.getContext("2d");
     this.width     = this.canvas.width;
     this.height    = this.canvas.height;
@@ -96,34 +113,18 @@ var Fractal2D = (function() {
     this.ctx.putImageData(this.imageData, 0, 0);
   };
 
-  Image.prototype.getCursorPosition = function(e) {
-    var position = new Position();
-
-    if (e.pageX !== undefined && e.pageY !== undefined) {
-      position.x = e.pageX;
-      position.y = e.pageY;
-    } else {
-      position.x = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
-      position.y = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
-    }
-    position.x -= this.canvas.offsetLeft;
-    position.y -= this.canvas.offsetTop;
-
-    return position;
-  };
-
   /********************************
    * Fractal algorithm interfaces *
    ********************************/
 
-  var JuliaAlgo = function(maxIter, smoothing, c) {
-    this.maxIter      = maxIter;
+  var JuliaAlgo = function(maxBailout, smoothing, c) {
+    this.maxBailout   = maxBailout;
     this.smoothing    = smoothing;
     this.isMandelbrot = c === undefined;
     this.c            = c;
   };
 
-  JuliaAlgo.prototype.iterate = function(z) {
+  JuliaAlgo.prototype.getBailout = function(z) {
     var iter = 0, tmp = 0, frac = 0, bailout = 4;
 
     if (this.isMandelbrot) {
@@ -132,7 +133,7 @@ var Fractal2D = (function() {
     if (this.smoothing) {
       bailout = 1 << 16;
     }
-    while (z.mod2() <= bailout && iter < this.maxIter) {
+    while (z.mod2() <= bailout && iter < this.maxBailout) {
       tmp = z.a * z.a - z.b * z.b + this.c.a;
       z.b = 2 * z.a * z.b + this.c.b;
       z.a = tmp;
@@ -192,26 +193,77 @@ var Fractal2D = (function() {
     return this.position.toComplex(this.scaleFactor, this.origin);
   };
 
-  /**
-   *
-   */
-  Fractal.prototype.draw = function() {
-    var x, y;
+  Fractal.prototype.getBailout = function(position) {
+    return this.algorithm.getBailout(
+      position.toComplex(this.scaleFactor, this.position)
+    );
+  };
 
-    for (y = 0; y < this.image.height; y++) {
-      for (x = 0; x < this.image.width; x++) {
-        bailIter = this.algorithm.iterate(
-          new Position(x, y).toComplex(this.scaleFactor, this.position)
-        );
-        if (bailIter.floorValue == this.algorithm.maxIter) {
-          this.image.setPixel(x, y, this.mainColor);
+  Fractal.prototype.getProgressiveBailout = function(position, pixelSize, algoCache, rowCache) {
+    var x = position.x, y = position.y;
+
+    if (y % pixelSize === 0) {
+      if (x % pixelSize === 0) {
+        if (algoCache[y][x] === 0) {
+          bailout = this.algorithm.getBailout(
+            position.toComplex(this.scaleFactor, this.position)
+          );
+          algoCache[y][x] = bailout;
         } else {
-          color = this.colorMap.getColor(bailIter.smoothValue / this.algorithm.maxIter);
-          this.image.setPixel(x, y, color);
+          bailout = algoCache[y][x];
         }
+      }
+      rowCache[x] = bailout;
+    } else {
+      bailout = rowCache[x];
+    }
+    return bailout;
+  };
+
+  Fractal.prototype.fillImage = function(position, bailout) {
+    if (bailout.floorValue == this.algorithm.maxBailout) {
+      this.image.setPixel(position.x, position.y, this.mainColor);
+    } else {
+      color = this.colorMap.getColor(bailout.smoothValue / this.algorithm.maxBailout);
+      this.image.setPixel(position.x, position.y, color);
+    }
+  };
+
+  Fractal.prototype.draw = function() {
+    //this.standardDraw();
+    this.progressiveDraw(16, Array.matrix(this.image.height, this.image.width, 0));
+  };
+
+  Fractal.prototype.standardDraw = function() {
+    var x, y, bailout, position;
+
+    for (y = 0; y < this.image.height; y ++) {
+      for (x = 0; x < this.image.width; x ++) {
+        position = new Position(x, y);
+        bailout = this.getBailout(position);
+        this.fillImage(position, bailout);
       }
     }
     this.image.draw();
+  };
+
+  // TODO merge algoCache and rowCache
+  Fractal.prototype.progressiveDraw = function(pixelSize, algoCache) {
+    var x, y, bailout, position, rowCache = [];
+
+    for (y = 0; y < this.image.height; y ++) {
+      for (x = 0; x < this.image.width; x ++) {
+        position = new Position(x, y);
+        bailout = this.getProgressiveBailout(position, pixelSize, algoCache, rowCache);
+        this.fillImage(position, bailout);
+      }
+    }
+    this.image.draw();
+    pixelSize /= 2;
+
+    if (pixelSize >= 1) {
+      setTimeout(this.progressiveDraw.bind(this), 1, pixelSize, algoCache);
+    }
   };
 
   Fractal.prototype.zoom = function(position) {
