@@ -69,10 +69,7 @@
       document.getElementById('canvas').addEventListener(
         'click',
         function (e) {
-          var cursor = new Fractal2D.Position(
-            getCursorPosition(e).x,
-            getCursorPosition(e).y
-          );
+          var cursor = getCursorPosition(e);
           fractal.translate(cursor).zoom(cursor).draw();
           updateData();
         },

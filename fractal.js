@@ -1,9 +1,11 @@
 /**
  * Small library to generate 2D fractals
  *
- * @version 0.3.0
+ * @version 0.4.0
  * @author Julien Descamps
  * @todo Documentation
+ * @todo Complex class renaming
+ * @todo JuliaAlgo refactoring
  * @todo Add loading percentage
  * @todo Add field lines
  * @todo Add interactive parameters into demo (setters/getters)
