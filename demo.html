@@ -1,79 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>JsFractalGenerator Demo</title>
-</head>
-<body>
-  Click to zoom on the picture<br>
-  Complex z = <span id="z-re"></span> + <span id="z-im"></span> i<br>
-  Zoom = <span id="zoom"></span>x<br>
-  <canvas id="canvas" width="800" height="800"></canvas>
-
-  <script src="palette.js"></script>
-  <script src="fractal.js"></script>
-  <script>
-  var canvas = document.getElementById('canvas');
-  var fractal = new Fractal2D.Fractal(
-      new Fractal2D.Image(canvas),
-      new Palette.Color(0, 0, 0, 255),
-      new Palette.ColorMap(1024, [
-        new Palette.Color(0, 0, 102, 255),
-        new Palette.Color(255, 255, 255, 255),
-        new Palette.Color(255, 102, 0, 255)
-      ]),
-      new Fractal2D.JuliaAlgo(
-        500,
-        true,
-      //  new Fractal2D.Complex(0.285, 0)
-        //new Fractal2D.Complex(-1.476, 0)
-        //new Fractal2D.Complex(-0.79, 0.15)
-        //new Fractal2D.Complex(0.11031, -0.67037)
-        //new Fractal2D.Complex(0, 1)
-        new Fractal2D.Complex(-0.194, 0.6557)
-        //new Fractal2D.Complex(-0.12, 0.74)
-        //new Fractal2D.Complex(0.27334, 0.00742)
-        //new Fractal2D.Complex(-0.7, 0.27015)
-      )
-  );
-  fractal.draw();
-
-  var getCursorPosition = function(e) {
-    var position = new Fractal2D.Position();
-
-    if (e.pageX !== undefined && e.pageY !== undefined) {
-      position.x = e.pageX;
-      position.y = e.pageY;
-    } else {
-      position.x = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
-      position.y = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
-    }
-    position.x -= canvas.offsetLeft;
-    position.y -= canvas.offsetTop;
-
-    return position;
-  };
-
-  var updateData = function() {
-    var complex = fractal.getComplex();
-    document.getElementById('z-re').innerHTML = complex.a;
-    document.getElementById('z-im').innerHTML = complex.b;
-    document.getElementById('zoom').innerHTML = fractal.getZoom();
-  };
-  updateData();
-
-  document.getElementById('canvas').addEventListener(
-    'click',
-    function(e) {
-      var cursor = new Fractal2D.Position(
-        getCursorPosition(e).x,
-        getCursorPosition(e).y
+  <head>
+    <meta charset="utf-8">
+    <title>JsFractalGenerator Demo</title>
+  </head>
+  <body>
+    Click to zoom on the picture<br>
+    Complex z =
+    <span id="z-re"></span>
+    +
+    <span id="z-im"></span>
+    i<br>
+    Zoom =
+    <span id="zoom"></span>x<br>
+    <canvas height="500" id="canvas" width="500"></canvas>
+    <script src="palette.js"></script>
+    <script src="fractal.js"></script>
+    <script>
+      var canvas = document.getElementById('canvas');
+      var fractal = new Fractal2D.Fractal(
+        new Fractal2D.Image(canvas),
+        new Palette.Color(0, 0, 0, 255),
+        new Palette.ColorMap(1024, [
+          new Palette.Color(0, 0, 102, 255),
+          new Palette.Color(255, 255, 255, 255),
+          new Palette.Color(255, 102, 0, 255)
+          ]
+        ),
+        new Fractal2D.JuliaAlgo(
+          500, // iterations
+          true, // smoothing
+          //new Fractal2D.Complex(0.285, 0)
+          //new Fractal2D.Complex(-1.476, 0)
+          //new Fractal2D.Complex(-0.79, 0.15)
+          //new Fractal2D.Complex(0.11031, -0.67037)
+          //new Fractal2D.Complex(0, 1)
+          new Fractal2D.Complex(-0.194, 0.6557) //new Fractal2D.Complex(-0.12, 0.74)
+          //new Fractal2D.Complex(0.27334, 0.00742)
+          //new Fractal2D.Complex(-0.7, 0.27015)
+        )
       );
-      fractal.translate(cursor).zoom(cursor).draw();
+      fractal.setProgressive(true).draw();
+
+      var getCursorPosition = function (e) {
+        var x, y;
+
+        if (e.pageX !== undefined && e.pageY !== undefined) {
+          x = e.pageX;
+          y = e.pageY;
+        } else {
+          x = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+          y = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+        }
+        x -= canvas.offsetLeft;
+        y -= canvas.offsetTop;
+
+        return position = new Fractal2D.Position(x, y);
+      };
+
+      var updateData = function () {
+        var complex = fractal.getComplex();
+        document.getElementById('z-re').innerHTML = complex.a;
+        document.getElementById('z-im').innerHTML = complex.b;
+        document.getElementById('zoom').innerHTML = fractal.getZoom();
+      };
       updateData();
-    },
-    false
-  );
-  </script>
-</body>
+
+      document.getElementById('canvas').addEventListener(
+        'click',
+        function (e) {
+          var cursor = new Fractal2D.Position(
+            getCursorPosition(e).x,
+            getCursorPosition(e).y
+          );
+          fractal.translate(cursor).zoom(cursor).draw();
+          updateData();
+        },
+        false);
+    </script>
+  </body>
 </html>

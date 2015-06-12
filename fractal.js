@@ -4,31 +4,13 @@
  * @version 0.3.0
  * @author Julien Descamps
  * @todo Documentation
- * @todo Add default parameters
- * @todo Add progressive display
+ * @todo Add loading percentage
  * @todo Add field lines
  * @todo Add interactive parameters into demo (setters/getters)
  * @todo Manage exceptions
  * @todo Use Web Workers
  */
 var Fractal2D = (function() {
-
-  /************************
-   * Helper class *
-   ************************/
-
-  Array.matrix = function (rows, columns, initial) {
-      var a, i, j, matrix = [];
-
-      for (i = 0; i < rows; i ++) {
-          a = [];
-          for (j = 0; j < columns; j ++) {
-              a[j] = initial;
-          }
-          matrix[i] = a;
-      }
-      return matrix;
-  };
 
   /************************
    * Complex number class *
@@ -159,6 +141,7 @@ var Fractal2D = (function() {
     this.mainColor   = mainColor;
     this.colorMap    = colorMap;
     this.algorithm   = algorithm;
+    this.progressive = false;
     this.origin      = new Position(this.image.width / 2, this.image.height / 2);
     this.position    = new Position(this.origin.x, this.origin.y);
     this.zoomFactor  = 2;
@@ -167,6 +150,26 @@ var Fractal2D = (function() {
       x: this.range.a / this.image.width,
       y: this.range.b / this.image.height
     };
+  };
+
+  Fractal.matrix = function (rows, columns) {
+      var a, i, j, matrix = [];
+
+      for (i = 0; i < rows; i ++) {
+          a = [];
+          for (j = 0; j < columns; j ++) {
+              a[j] = { computed: false, bailout: 0 };
+          }
+          matrix[i] = a;
+      }
+      return matrix;
+  };
+
+ // TODO no parameter setter ?
+  Fractal.prototype.setProgressive = function(progressive) {
+    this.progressive = progressive;
+
+    return this;
   };
 
   Fractal.prototype.setZoomFactor = function(zoomFactor) {
@@ -199,28 +202,28 @@ var Fractal2D = (function() {
     );
   };
 
-  Fractal.prototype.getProgressiveBailout = function(position, pixelSize, algoCache, rowCache) {
+  Fractal.prototype.getProgressiveBailout = function(position, bailout, pixelSize, cache) {
     var x = position.x, y = position.y;
 
     if (y % pixelSize === 0) {
       if (x % pixelSize === 0) {
-        if (algoCache[y][x] === 0) {
+        if (cache[y][x].computed === false) {
           bailout = this.algorithm.getBailout(
             position.toComplex(this.scaleFactor, this.position)
           );
-          algoCache[y][x] = bailout;
+          cache[y][x].computed = true;
         } else {
-          bailout = algoCache[y][x];
+          bailout = cache[y][x].bailout;
         }
       }
-      rowCache[x] = bailout;
+      cache[y][x].bailout = bailout;
     } else {
-      bailout = rowCache[x];
+      bailout = cache[y - (y % pixelSize)][x].bailout;
     }
     return bailout;
   };
 
-  Fractal.prototype.fillImage = function(position, bailout) {
+  Fractal.prototype.fill = function(position, bailout) {
     if (bailout.floorValue == this.algorithm.maxBailout) {
       this.image.setPixel(position.x, position.y, this.mainColor);
     } else {
@@ -230,8 +233,11 @@ var Fractal2D = (function() {
   };
 
   Fractal.prototype.draw = function() {
-    //this.standardDraw();
-    this.progressiveDraw(16, Array.matrix(this.image.height, this.image.width, 0));
+    if (this.progressive) {
+      this.progressiveDraw(16, Fractal.matrix(this.image.height, this.image.width));
+    } else {
+      this.standardDraw();
+    }
   };
 
   Fractal.prototype.standardDraw = function() {
@@ -241,28 +247,27 @@ var Fractal2D = (function() {
       for (x = 0; x < this.image.width; x ++) {
         position = new Position(x, y);
         bailout = this.getBailout(position);
-        this.fillImage(position, bailout);
+        this.fill(position, bailout);
       }
     }
     this.image.draw();
   };
 
-  // TODO merge algoCache and rowCache
-  Fractal.prototype.progressiveDraw = function(pixelSize, algoCache) {
-    var x, y, bailout, position, rowCache = [];
+  Fractal.prototype.progressiveDraw = function(pixelSize, cache) {
+    var x, y, bailout, position;
 
     for (y = 0; y < this.image.height; y ++) {
       for (x = 0; x < this.image.width; x ++) {
         position = new Position(x, y);
-        bailout = this.getProgressiveBailout(position, pixelSize, algoCache, rowCache);
-        this.fillImage(position, bailout);
+        bailout = this.getProgressiveBailout(position, bailout, pixelSize, cache);
+        this.fill(position, bailout);
       }
     }
     this.image.draw();
     pixelSize /= 2;
 
     if (pixelSize >= 1) {
-      setTimeout(this.progressiveDraw.bind(this), 1, pixelSize, algoCache);
+      setTimeout(this.progressiveDraw.bind(this), 1, pixelSize, cache);
     }
   };
 
