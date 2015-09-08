@@ -1,46 +1,137 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>JsFractalGenerator Demo</title>
-  </head>
-  <body>
-    Click to zoom on the picture<br>
-    Complex z =
-    <span id="z-re"></span>
-    +
-    <span id="z-im"></span>
-    i<br>
-    Zoom =
-    <span id="zoom"></span>x<br>
-    <canvas height="500" id="canvas" width="500"></canvas>
-    <script src="palette.js"></script>
-    <script src="fractal.js"></script>
+<head>
+  <meta charset="utf-8">
+  <title>FractalJS Demo</title>
+  <meta name="description" content="FractalJS library demo page">
+  <meta name="author" content="Julien Descamps">
+  <style>
+  body {
+    width: 1000px;
+    margin: 0 auto;
+    font-family: Verdana, Geneva, sans-serif;
+  }
+  main {
+    background-color: #eee;
+    border: 1px solid #bbb;
+    padding: 5px;
+    height: 552px;
+    border-radius: 5px;
+  }
+  canvas {
+    float: left;
+    width: 750px;
+    height: 550px;
+    border: 1px solid #bbb;
+    border-radius: 5px;
+  }
+  form {
+    float: right;
+    width: 200px;
+    border: 1px solid #bbb;
+    height: 550px;
+    background-color: #eee;
+    padding: 0 15px;
+    border-radius: 5px;
+  }
+  select, input {
+    width: 100%;
+  }
+  h2 {
+    text-align: center;
+  }
+  label {
+    display: block;
+    font-weight: bold;
+  }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>FractalJS Demo Page</h1>
+  </header>
+  <main>
+    <canvas id="fractal" width="750" height="550"></canvas>
+    <form>
+      <h2>Parameters</h2>
+      <p><em>Click on the picture to zoom into the fractal.</em></p>
+      <p>
+        <label for="equation">Equation</label>
+        <select id="equation" name="equation">
+          <option value="mandelbrot">Mandelbrot</option>
+          <option value="tricorn">Tricorn</option>
+          <option value="burning">Burning Ship</option>
+          <option value="newton">Newton</option>
+        </select>
+      </p>
+
+      <p>
+        <label for="coloring">Coloring</label>
+        <select id="coloring" name="coloring">
+          <option value="smoothbailout">Smooth Bailout</option>
+          <option value="bailout">Simple Bailout</option>
+          <option value="binary">Binary</option>
+          <option value="angle">Angle</option>
+          <option value="simple">Simple</option>
+        </select>
+      </p>
+
+      <p>
+        <label for="palette">Palette</label>
+        <select id="palette" name="palette">
+          <option value="night">Night</option>
+          <option value="rainbow">Rainbow</option>
+          <option value="fire">Fire</option>
+          <option value="sky">Sky</option>
+          <option value="blacknwhite">Black N White</option>
+        </select>
+      </p>
+
+      <p>
+        <label for="julia">Julia Set</label>
+        <select id="julia" name="julia">
+          <option value="">---</option>
+          <option value="set1">Set 1</option>
+          <option value="set2">Set 2</option>
+          <option value="set3">Set 3</option>
+          <option value="set4">Set 4</option>
+          <option value="set5">Set 5</option>
+          <option value="set6">Set 6</option>
+        </select>
+      </p>
+
+      <p>
+        <label for="iterations">Iterations</label>
+        <input type="text" id="iterations">
+      </p>
+      </form>
+    </main>
+
+    <script src="jpalette.js"></script>
+    <script src="jfractal.js"></script>
+
     <script>
-      var canvas = document.getElementById('canvas');
-      var fractal = new Fractal2D.Fractal(
-        new Fractal2D.Image(canvas),
-        new Palette.Color(0, 0, 0, 255),
-        new Palette.ColorMap(1024, [
-          new Palette.Color(0, 0, 102, 255),
-          new Palette.Color(255, 255, 255, 255),
-          new Palette.Color(255, 102, 0, 255)
-          ]
-        ),
-        new Fractal2D.JuliaAlgo(
-          500, // iterations
-          true, // smoothing
-          //new Fractal2D.Complex(0.285, 0)
-          //new Fractal2D.Complex(-1.476, 0)
-          //new Fractal2D.Complex(-0.79, 0.15)
-          //new Fractal2D.Complex(0.11031, -0.67037)
-          //new Fractal2D.Complex(0, 1)
-          new Fractal2D.Complex(-0.194, 0.6557) //new Fractal2D.Complex(-0.12, 0.74)
-          //new Fractal2D.Complex(0.27334, 0.00742)
-          //new Fractal2D.Complex(-0.7, 0.27015)
-        )
-      );
-      fractal.setProgressive(true).draw();
+    (function() {
+      var byId = document.getElementById.bind(document),
+       canvas  = byId('fractal'),
+       F       = jFractal,
+       P       = jPalette,
+       black   = P.Color.get('black')(255),
+       white   = P.Color.get('white')(255),
+       night   = P.ColorMap.get('night')(2000),
+       rainbow = P.ColorMap.get('rainbow')(2000),
+       fire    = P.ColorMap.get('fire')(2000),
+       sky     = P.ColorMap.get('sky')(2000),
+       bnw     = P.ColorMap.get('blacknwhite')(2000);
+
+      var display = new F.ProgressiveDisplay(
+          new F.Picture(canvas, new F.Complex(-0.7, 0), {re:3, im:3}, true),
+          new F.SmoothBailoutColoring(
+            new F.BailoutAlgo(new F.MandelbrotEquation(), 40,  1 << 16),
+            black,
+            night
+          )
+      ).refresh();
 
       var getCursorPosition = function (e) {
         var x, y;
@@ -55,25 +146,170 @@
         x -= canvas.offsetLeft;
         y -= canvas.offsetTop;
 
-        return position = new Fractal2D.Position(x, y);
+        return new F.Point(x, y);
       };
 
-      var updateData = function () {
-        var complex = fractal.getComplex();
-        document.getElementById('z-re').innerHTML = complex.a;
-        document.getElementById('z-im').innerHTML = complex.b;
-        document.getElementById('zoom').innerHTML = fractal.getZoom();
-      };
-      updateData();
+      canvas.addEventListener(
+         'click',
+         function (e) {
+           algo = display.coloring.algorithm;
+           algo.maxIter = Math.round(algo.maxIter * 1.1);
+           byId('iterations').value = algo.maxIter;
+           display.picture.setCenter(getCursorPosition(e)).zoom(2);
+           display.refresh();
+         },
+         false
+      );
 
-      document.getElementById('canvas').addEventListener(
-        'click',
-        function (e) {
-          var cursor = getCursorPosition(e);
-          fractal.translate(cursor).zoom(cursor).draw();
-          updateData();
-        },
-        false);
+      byId('iterations').value = display.coloring.algorithm.maxIter;
+
+      byId('iterations').addEventListener(
+         'keydown',
+         function(e) {
+           if (e.keyCode == 13) {
+             display.coloring.algorithm.maxIter = e.target.value;
+             display.refresh();
+           }
+         },
+         false
+       );
+
+      byId('equation').addEventListener(
+         'change',
+         function(e) {
+           var equation, disp;
+           switch (e.target.value) {
+             default:
+             case 'mandelbrot':
+              equation = new F.MandelbrotEquation();
+              disp = 'block';
+             break;
+             case 'tricorn':
+              equation = new F.TricornEquation();
+              disp = 'none';
+             break;
+             case 'burning':
+              equation = new F.BurningShipEquation();
+              disp = 'none';
+             break;
+             case 'newton':
+              display.coloring.algorithm = new F.NewtonAlgo(equation, 30, 0.001);
+              equation = new F.NewtonEquation();
+              disp = 'none';
+             break;
+           }
+           byId('julia').style.display = disp;
+           display.coloring.algorithm.equation = equation;
+           display.picture.setRange({re:3, im:3}).setCenter(new F.Complex());
+           display.refresh();
+         },
+         false
+       );
+
+       byId('julia').addEventListener(
+          'change',
+          function(e) {
+            var c;
+            switch (e.target.value) {
+              default:
+              case '':
+                c = undefined;
+              break;
+              case 'set1':
+                c = new F.Complex(0.285, 0.01);
+              break;
+              case 'set2':
+                c = new F.Complex(-0.11, 0.6557);
+              break;
+              case 'set3':
+                c = new F.Complex(-0.8, 0.156);
+              break;
+              case 'set4':
+                c = new F.Complex(-0.835, -0.2321);
+              break;
+              case 'set5':
+                c = new F.Complex(-0.70176,-0.3842);
+              break;
+              case 'set6':
+                c = new F.Complex(0, 1);
+              break;
+            }
+            display.coloring.algorithm.c = c;
+            display.picture.setRange({re:3, im:3}).setCenter(new F.Complex());
+            display.refresh();
+          },
+          false
+        );
+
+       byId('coloring').addEventListener(
+          'change',
+          function(e) {
+            var radius, coloring, algo = display.coloring.algorithm, disp;
+            switch (e.target.value) {
+              default:
+              case 'bailout':
+                radius = 4;
+                coloring = new F.BailoutColoring(algo, black, night);
+                disp = 'inline-block';
+              break;
+              case 'smoothbailout':
+                radius = 1 << 16;
+                coloring = new F.SmoothBailoutColoring(algo, black, night);
+                disp = 'inline-block';
+              break;
+              case 'binary':
+                radius = 1 << 16;
+                coloring = new F.BinaryColoring(algo, black, white, black);
+                disp = 'none';
+              break;
+              case 'angle':
+                radius = 4;
+                coloring = new F.AngleColoring(algo, black, night);
+                disp = 'inline-block';
+              break;
+              case 'simple':
+                radius = 4;
+                coloring = new F.SimpleColoring(algo, black, white);
+                disp = 'none';
+              break;
+            }
+            display.coloring.algorithm.radius = radius;
+            display.coloring = coloring;
+            byId('palette').style.display = disp;
+            byId('palette').selectedIndex = 0;
+            display.refresh();
+          },
+          false
+        );
+
+        byId('palette').addEventListener(
+           'change',
+           function(e) {
+             var palette;
+             switch (e.target.value) {
+               default:
+               case 'night':
+                palette = night;
+               break;
+               case 'rainbow':
+                palette = rainbow;
+               break;
+               case 'fire':
+                palette = fire;
+               break;
+               case 'sky':
+                palette = sky;
+               break;
+               case 'blacknwhite':
+                palette = bnw;
+               break;
+             }
+             display.coloring.palette = palette;
+             display.refresh();
+           },
+           false
+         );
+       })();
     </script>
   </body>
 </html>

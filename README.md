@@ -1,4 +1,4 @@
-# JsFractalGenerator
+# jFractal
 
 A small javascript library to generate 2D fractals using HTML5 canvas.
 
