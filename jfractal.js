@@ -1,15 +1,15 @@
 /**
  * Small library to generate 2D fractals.
  *
- * @version 0.4.0
+ * @version 0.5.0
  * @author Julien Descamps
  * @namespace jFractal
  * @todo Documentation
- * @todo Add loading percentage
- * @todo Add field lines
- * @todo Manage exceptions
+ * @todo Loading percentage
+ * @todo Field lines
+ * @todo Exceptions
  * @todo Anti Aliasing
- * @todo Use Web Workers
+ * @todo Web Workers
  */
  ;(function(namespace, undefined) {
    'use strict';
@@ -262,7 +262,7 @@
    }
    while (zo.getSquare() > this.epsilon && iter < this.maxIter);
 
-   return {iter: iter, complex: z};
+   return {iter: iter, complex: zo};
   };
 
   /**
@@ -469,7 +469,7 @@
    if (bailout.iter == this.algorithm.maxIter) {
      return this.mainColor;
    }
-   return this.palette.getColor(
+   return this.palette.getColor( // TODO check range for log ! make a function !
      (bailout.iter + 1 -
       Math.log(
         Math.log(bailout.complex.getModule()) / Math.log(2)

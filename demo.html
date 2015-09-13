@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>FractalJS Demo</title>
-  <meta name="description" content="FractalJS library demo page">
+  <title>jFractal library demo page</title>
+  <meta name="description" content="jFractal library demo page">
   <meta name="author" content="Julien Descamps">
   <style>
   body {
@@ -48,7 +48,7 @@
 </head>
 <body>
   <header>
-    <h1>FractalJS Demo Page</h1>
+    <h1>jFractal library demo page</h1>
   </header>
   <main>
     <canvas id="fractal" width="750" height="550"></canvas>
@@ -68,8 +68,8 @@
       <p>
         <label for="coloring">Coloring</label>
         <select id="coloring" name="coloring">
-          <option value="smoothbailout">Smooth Bailout</option>
           <option value="bailout">Simple Bailout</option>
+          <option value="smoothbailout">Smooth Bailout</option>
           <option value="binary">Binary</option>
           <option value="angle">Angle</option>
           <option value="simple">Simple</option>
@@ -103,6 +103,7 @@
       <p>
         <label for="iterations">Iterations</label>
         <input type="text" id="iterations">
+        <button type="button" id="button">Go</button>
       </p>
       </form>
     </main>
@@ -112,26 +113,55 @@
 
     <script>
     (function() {
-      var byId = document.getElementById.bind(document),
-       canvas  = byId('fractal'),
-       F       = jFractal,
-       P       = jPalette,
-       black   = P.Color.get('black')(255),
-       white   = P.Color.get('white')(255),
-       night   = P.ColorMap.get('night')(2000),
-       rainbow = P.ColorMap.get('rainbow')(2000),
-       fire    = P.ColorMap.get('fire')(2000),
-       sky     = P.ColorMap.get('sky')(2000),
-       bnw     = P.ColorMap.get('blacknwhite')(2000);
 
-      var display = new F.ProgressiveDisplay(
-          new F.Picture(canvas, new F.Complex(-0.7, 0), {re:3, im:3}, true),
-          new F.SmoothBailoutColoring(
-            new F.BailoutAlgo(new F.MandelbrotEquation(), 40,  1 << 16),
-            black,
-            night
-          )
-      ).refresh();
+      /***** Global variables *****/
+
+      var
+       canvas     = document.getElementById('fractal'),
+       equation   = document.getElementById('equation'),
+       coloring   = document.getElementById('coloring'),
+       palette    = document.getElementById('palette'),
+       julia      = document.getElementById('julia'),
+       iterations = document.getElementById('iterations'),
+       button     = document.getElementById('button'),
+       // Namespaces
+       f = jFractal,
+       p = jPalette,
+       // Colors
+       black  = p.Color.get('black')(255),
+       white  = p.Color.get('white')(255),
+       // Palettes
+       night       = p.ColorMap.get('night')(2000),
+       rainbow     = p.ColorMap.get('rainbow')(2000),
+       fire        = p.ColorMap.get('fire')(2000),
+       sky         = p.ColorMap.get('sky')(2000),
+       blacknwhite = p.ColorMap.get('blacknwhite')(2000),
+       // Equations
+       mandelbrotEquation = new f.MandelbrotEquation(),
+       tricornEquation    = new f.TricornEquation(),
+       burningEquation    = new f.BurningShipEquation(),
+       newtonEquation     = new f.NewtonEquation();
+       // Algorithms
+       bailoutAlgo = new f.BailoutAlgo(mandelbrotEquation, 40, 4),
+       newtonAlgo  = new f.NewtonAlgo(newtonEquation, 40, 0.001),
+       // Colorings
+       simpleColoring        = new f.SimpleColoring(bailoutAlgo, black, white);
+       bailoutColoring       = new f.BailoutColoring(bailoutAlgo, black, night);
+       smoothBailoutColoring = new f.SmoothBailoutColoring(bailoutAlgo, black, night);
+       angleColoring         = new f.AngleColoring(bailoutAlgo, black, night);
+       binaryColoring        = new f.BinaryColoring(bailoutAlgo, black, white, black),
+       // General
+       picture = new f.Picture(canvas, new f.Complex(), {re:3, im:3}, true),
+       display = new f.ProgressiveDisplay(picture, bailoutColoring),
+       // Julia sets
+       c1 = new f.Complex(0.285, 0.01),
+       c2 = new f.Complex(-0.11, 0.6557),
+       c3 = new f.Complex(-0.8, 0.156),
+       c4 = new f.Complex(-0.835, -0.2321),
+       c5 = new f.Complex(-0.70176,-0.3842),
+       c6 = new f.Complex(0, 1);
+
+      /********** Functions **********/
 
       var getCursorPosition = function (e) {
         var x, y;
@@ -146,170 +176,145 @@
         x -= canvas.offsetLeft;
         y -= canvas.offsetTop;
 
-        return new F.Point(x, y);
+        return new f.Point(x, y);
       };
 
-      canvas.addEventListener(
-         'click',
-         function (e) {
-           algo = display.coloring.algorithm;
-           algo.maxIter = Math.round(algo.maxIter * 1.1);
-           byId('iterations').value = algo.maxIter;
-           display.picture.setCenter(getCursorPosition(e)).zoom(2);
-           display.refresh();
-         },
-         false
-      );
+      var setZoom = function(e) {
+        display.picture.setCenter(getCursorPosition(e)).zoom(2);
+        display.refresh();
+      };
 
-      byId('iterations').value = display.coloring.algorithm.maxIter;
+      var setEquation = function(e) {
+        var algorithm, equation;
+        switch (e.target.value) {
+          default:
+          case 'mandelbrot':
+            algorithm = bailoutAlgo;
+            equation = mandelbrotEquation;
+            break;
+          case 'tricorn':
+            algorithm = bailoutAlgo;
+            equation = tricornEquation;
+            break;
+          case 'burning':
+            algorithm = bailoutAlgo;
+            equation = burningEquation;
+            break;
+          case 'newton':
+            algorithm = newtonAlgo;
+            equation = newtonEquation;
+            break;
+        }
+        display.coloring.algorithm = algorithm;
+        display.coloring.algorithm.equation = equation;
+        display.refresh();
+      };
 
-      byId('iterations').addEventListener(
-         'keydown',
-         function(e) {
-           if (e.keyCode == 13) {
-             display.coloring.algorithm.maxIter = e.target.value;
-             display.refresh();
-           }
-         },
-         false
-       );
+      var setColoring = function(e) {
+        var radius, coloring;
+        switch (e.target.value) {
+          default:
+          case 'bailout':
+            radius = 4;
+            coloring = bailoutColoring;
+            break;
+          case 'smoothbailout':
+            radius = 1 << 16;
+            coloring = smoothBailoutColoring;
+            break;
+          case 'binary':
+            radius = 1 << 16;
+            coloring = binaryColoring;
+            break;
+          case 'angle':
+            radius = 4;
+            coloring = angleColoring;
+            break;
+          case 'simple':
+            radius = 4;
+            coloring = simpleColoring;
+            break;
+        }
+        display.coloring = coloring;
+        display.coloring.algorithm.radius = radius;
+        display.refresh();
+      };
 
-      byId('equation').addEventListener(
-         'change',
-         function(e) {
-           var equation, disp;
-           switch (e.target.value) {
-             default:
-             case 'mandelbrot':
-              equation = new F.MandelbrotEquation();
-              disp = 'block';
-             break;
-             case 'tricorn':
-              equation = new F.TricornEquation();
-              disp = 'none';
-             break;
-             case 'burning':
-              equation = new F.BurningShipEquation();
-              disp = 'none';
-             break;
-             case 'newton':
-              display.coloring.algorithm = new F.NewtonAlgo(equation, 30, 0.001);
-              equation = new F.NewtonEquation();
-              disp = 'none';
-             break;
-           }
-           byId('julia').style.display = disp;
-           display.coloring.algorithm.equation = equation;
-           display.picture.setRange({re:3, im:3}).setCenter(new F.Complex());
-           display.refresh();
-         },
-         false
-       );
+      var setPalette = function(e) {
+        var palette;
+        switch (e.target.value) {
+          default:
+          case 'night':
+           palette = night;
+           break;
+          case 'rainbow':
+           palette = rainbow;
+           break;
+          case 'fire':
+           palette = fire;
+           break;
+          case 'sky':
+           palette = sky;
+           break;
+          case 'blacknwhite':
+           palette = blacknwhite;
+           break;
+        }
+        display.coloring.palette = palette;
+        display.refresh();
+      };
 
-       byId('julia').addEventListener(
-          'change',
-          function(e) {
-            var c;
-            switch (e.target.value) {
-              default:
-              case '':
-                c = undefined;
-              break;
-              case 'set1':
-                c = new F.Complex(0.285, 0.01);
-              break;
-              case 'set2':
-                c = new F.Complex(-0.11, 0.6557);
-              break;
-              case 'set3':
-                c = new F.Complex(-0.8, 0.156);
-              break;
-              case 'set4':
-                c = new F.Complex(-0.835, -0.2321);
-              break;
-              case 'set5':
-                c = new F.Complex(-0.70176,-0.3842);
-              break;
-              case 'set6':
-                c = new F.Complex(0, 1);
-              break;
-            }
-            display.coloring.algorithm.c = c;
-            display.picture.setRange({re:3, im:3}).setCenter(new F.Complex());
-            display.refresh();
-          },
-          false
-        );
+      var setJulia = function(e) {
+        var c;
+        switch (e.target.value) {
+          default:
+          case '':
+            c = undefined;
+          break;
+          case 'set1':
+            c = c1;
+            break;
+          case 'set2':
+            c = c2;
+            break;
+          case 'set3':
+            c = c3;
+            break;
+          case 'set4':
+            c = c4;
+            break;
+          case 'set5':
+            c = c5;
+            break;
+          case 'set6':
+            c = c6;
+            break;
+        }
+        display.coloring.algorithm.c = c;
+        display.picture.setRange({re:3, im:3}).setCenter(new f.Complex());
+        display.refresh();
+      };
 
-       byId('coloring').addEventListener(
-          'change',
-          function(e) {
-            var radius, coloring, algo = display.coloring.algorithm, disp;
-            switch (e.target.value) {
-              default:
-              case 'bailout':
-                radius = 4;
-                coloring = new F.BailoutColoring(algo, black, night);
-                disp = 'inline-block';
-              break;
-              case 'smoothbailout':
-                radius = 1 << 16;
-                coloring = new F.SmoothBailoutColoring(algo, black, night);
-                disp = 'inline-block';
-              break;
-              case 'binary':
-                radius = 1 << 16;
-                coloring = new F.BinaryColoring(algo, black, white, black);
-                disp = 'none';
-              break;
-              case 'angle':
-                radius = 4;
-                coloring = new F.AngleColoring(algo, black, night);
-                disp = 'inline-block';
-              break;
-              case 'simple':
-                radius = 4;
-                coloring = new F.SimpleColoring(algo, black, white);
-                disp = 'none';
-              break;
-            }
-            display.coloring.algorithm.radius = radius;
-            display.coloring = coloring;
-            byId('palette').style.display = disp;
-            byId('palette').selectedIndex = 0;
-            display.refresh();
-          },
-          false
-        );
+      var setIterations = function(e) {
+        if (iterations.value > 1) {
+          display.coloring.algorithm.maxIter = iterations.value;
+          display.refresh();
+        }
+      };
 
-        byId('palette').addEventListener(
-           'change',
-           function(e) {
-             var palette;
-             switch (e.target.value) {
-               default:
-               case 'night':
-                palette = night;
-               break;
-               case 'rainbow':
-                palette = rainbow;
-               break;
-               case 'fire':
-                palette = fire;
-               break;
-               case 'sky':
-                palette = sky;
-               break;
-               case 'blacknwhite':
-                palette = bnw;
-               break;
-             }
-             display.coloring.palette = palette;
-             display.refresh();
-           },
-           false
-         );
-       })();
+      /********* Main code *********/
+
+      display.refresh();
+
+      iterations.value = display.coloring.algorithm.maxIter;
+
+      canvas.addEventListener('click', setZoom, false);
+      equation.addEventListener('change', setEquation, false);
+      coloring.addEventListener('change', setColoring, false);
+      palette.addEventListener('change', setPalette, false);
+      julia.addEventListener('change', setJulia, false);
+      button.addEventListener('click', setIterations, false);
+    })();
     </script>
   </body>
 </html>
