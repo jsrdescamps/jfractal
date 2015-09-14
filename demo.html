@@ -56,7 +56,7 @@
       <h2>Parameters</h2>
       <p><em>Click on the picture to zoom into the fractal.</em></p>
       <p>
-        <label for="equation">Equation</label>
+        <label for="equation" id="label-equation">Equation</label>
         <select id="equation" name="equation">
           <option value="mandelbrot">Mandelbrot</option>
           <option value="tricorn">Tricorn</option>
@@ -66,7 +66,7 @@
       </p>
 
       <p>
-        <label for="coloring">Coloring</label>
+        <label for="coloring" id="label-coloring">Coloring</label>
         <select id="coloring" name="coloring">
           <option value="bailout">Simple Bailout</option>
           <option value="smoothbailout">Smooth Bailout</option>
@@ -77,7 +77,7 @@
       </p>
 
       <p>
-        <label for="palette">Palette</label>
+        <label for="palette" id="label-palette">Palette</label>
         <select id="palette" name="palette">
           <option value="night">Night</option>
           <option value="rainbow">Rainbow</option>
@@ -88,7 +88,7 @@
       </p>
 
       <p>
-        <label for="julia">Julia Set</label>
+        <label for="julia" id="label-julia">Julia Set</label>
         <select id="julia" name="julia">
           <option value="">---</option>
           <option value="set1">Set 1</option>
@@ -101,7 +101,7 @@
       </p>
 
       <p>
-        <label for="iterations">Iterations</label>
+        <label for="iterations" id="label-iterations">Iterations</label>
         <input type="text" id="iterations">
         <button type="button" id="button">Go</button>
       </p>
@@ -150,8 +150,12 @@
        smoothBailoutColoring = new f.SmoothBailoutColoring(bailoutAlgo, black, night);
        angleColoring         = new f.AngleColoring(bailoutAlgo, black, night);
        binaryColoring        = new f.BinaryColoring(bailoutAlgo, black, white, black),
+       // Some fractal centers
+       zeroCenter    = new f.Complex(0, 0);
+       mandelCenter  = new f.Complex(-0.7, 0);
+       burningCenter = new f.Complex(0.5, 0.5);
        // General
-       picture = new f.Picture(canvas, new f.Complex(), {re:3, im:3}, true),
+       picture = new f.Picture(canvas, mandelCenter, {re:3, im:3}, true),
        display = new f.ProgressiveDisplay(picture, bailoutColoring),
        // Julia sets
        c1 = new f.Complex(0.285, 0.01),
@@ -162,6 +166,8 @@
        c6 = new f.Complex(0, 1);
 
       /********** Functions **********/
+
+      // TODO local variables with underscore
 
       var getCursorPosition = function (e) {
         var x, y;
@@ -185,56 +191,97 @@
       };
 
       var setEquation = function(e) {
-        var algorithm, equation;
+        var algorithm, equation, center;
+        var juliaLabel = 'label-julia';
+        var smbOption  = {index: 1, value: 'smoothbailout', text: 'Smooth Bailout'};
+
         switch (e.target.value) {
           default:
           case 'mandelbrot':
             algorithm = bailoutAlgo;
             equation = mandelbrotEquation;
+            center = mandelCenter;
+            enableBlock(julia, juliaLabel);
+            enableOption(coloring, smbOption);
             break;
           case 'tricorn':
             algorithm = bailoutAlgo;
             equation = tricornEquation;
+            center = zeroCenter;
+            disableBlock(julia, juliaLabel);
+            enableOption(coloring, smbOption);
             break;
           case 'burning':
             algorithm = bailoutAlgo;
             equation = burningEquation;
+            center = burningCenter;
+            disableBlock(julia, juliaLabel);
+            enableOption(coloring, smbOption);
             break;
           case 'newton':
             algorithm = newtonAlgo;
             equation = newtonEquation;
+            center = zeroCenter;
+            disableBlock(julia, juliaLabel);
+            disableOption(coloring, smbOption);
             break;
         }
         display.coloring.algorithm = algorithm;
         display.coloring.algorithm.equation = equation;
+
+        // TODO init values on top
+        display.coloring.algorithm.c = undefined;
+        display.coloring.algorithm.maxIter = 40;
+        iterations.value = 40;
+        display.picture.setRange({re:3, im:3});
+        display.picture.setCenter(center);
+
         display.refresh();
       };
 
       var setColoring = function(e) {
         var radius, coloring;
+        var paletteLabel  = 'label-palette';
+        var newtonOption  = {index: 3, value: 'newton', text: 'Newton'};
+
         switch (e.target.value) {
           default:
           case 'bailout':
+            // TODO init values on top
             radius = 4;
             coloring = bailoutColoring;
+            enableOption(equation, newtonOption);
+            enableBlock(palette, paletteLabel);
             break;
           case 'smoothbailout':
             radius = 1 << 16;
             coloring = smoothBailoutColoring;
+            disableOption(equation, newtonOption);
+            enableBlock(palette, paletteLabel);
             break;
           case 'binary':
             radius = 1 << 16;
             coloring = binaryColoring;
+            enableOption(equation, newtonOption);
+            disableBlock(palette, paletteLabel);
             break;
           case 'angle':
             radius = 4;
             coloring = angleColoring;
+            enableOption(equation, newtonOption);
+            enableBlock(palette, paletteLabel);
             break;
           case 'simple':
             radius = 4;
             coloring = simpleColoring;
+            enableOption(equation, newtonOption);
+            disableBlock(palette, paletteLabel);
             break;
         }
+        // Saving old coloring params in new coloring
+        coloring.algorithm = display.coloring.algorithm;
+        coloring.palette = display.coloring.palette;
+        // Affecting new coloring
         display.coloring = coloring;
         display.coloring.algorithm.radius = radius;
         display.refresh();
@@ -299,6 +346,36 @@
         if (iterations.value > 1) {
           display.coloring.algorithm.maxIter = iterations.value;
           display.refresh();
+        }
+      };
+
+      /****** List functions *******/
+
+      var disableBlock = function(element, label) {
+        element.style.display = 'none';
+        document.getElementById(label).style.display = 'none';
+      };
+
+      var enableBlock = function(element, label) {
+        element.style.display = 'block';
+        document.getElementById(label).style.display = 'block';
+      };
+
+      var disableOption = function(element, params) {
+        if (element.options[params.index]
+         && element.options[params.index].value == params.value) {
+          element.options.remove(params.index);
+        }
+      };
+
+      var enableOption = function(element, params) {
+        var option;
+        if ((!element.options[params.index])
+           || element.options[params.index].value != params.value) {
+          option = document.createElement("option");
+          option.text = params.text;
+          option.value = params.value;
+          element.options.add(option, params.index);
         }
       };
 

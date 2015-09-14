@@ -540,7 +540,7 @@
    if (bailout.iter == this.algorithm.maxIter) {
      return this.mainColor;
    }
-   return this.palette.getColor(
+   return this.palette.getColor( // TODO check range for atan2, make a function
       (Math.atan2(
        bailout.complex.im, bailout.complex.re) + Math.PI
       ) / (2 * Math.PI)
@@ -563,7 +563,7 @@
    this.imageData = this.ctx.createImageData(canvas.width, canvas.height);
    this.origin    = new Point(canvas.width  / 2, canvas.height / 2);
    this.range     = range;
-   this.keepRatio = keepRatio;
+   this.keepRatio = keepRatio; // TODO Refactor
    if (keepRatio) { this.autoRange(); }
    this.scale     = this.computeScale();
    this.center    = center.getSym().getPoint(this.scale, this.origin);
@@ -695,7 +695,7 @@
    * @return {Picture}
    */
   Picture.prototype.zoom = function(factor) {
-    this.range.re /= factor;
+    this.range.re /= factor; // TODO Do not modify range !!!
     this.range.im /= factor;
     this.center.x  = this.origin.x * (1 - factor) + this.center.x * factor;
     this.center.y  = this.origin.y * (1 - factor) + this.center.y * factor;
