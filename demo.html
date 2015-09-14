@@ -44,6 +44,9 @@
     display: block;
     font-weight: bold;
   }
+  #iterations {
+    width: 50px;
+  }
   </style>
 </head>
 <body>
@@ -52,7 +55,7 @@
   </header>
   <main>
     <canvas id="fractal" width="750" height="550"></canvas>
-    <form>
+    <form onsubmit="return false;">
       <h2>Parameters</h2>
       <p><em>Click on the picture to zoom into the fractal.</em></p>
       <p>
@@ -167,22 +170,20 @@
 
       /********** Functions **********/
 
-      // TODO local variables with underscore
-
       var getCursorPosition = function (e) {
-        var x, y;
+        var _x, _y;
 
         if (e.pageX !== undefined && e.pageY !== undefined) {
-          x = e.pageX;
-          y = e.pageY;
+          _x = e.pageX;
+          _y = e.pageY;
         } else {
-          x = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
-          y = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+          _x = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+          _y = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
         }
-        x -= canvas.offsetLeft;
-        y -= canvas.offsetTop;
+        _x -= canvas.offsetLeft;
+        _y -= canvas.offsetTop;
 
-        return new f.Point(x, y);
+        return new f.Point(_x, _y);
       };
 
       var setZoom = function(e) {
@@ -191,165 +192,163 @@
       };
 
       var setEquation = function(e) {
-        var algorithm, equation, center;
-        var juliaLabel = 'label-julia';
-        var smbOption  = {index: 1, value: 'smoothbailout', text: 'Smooth Bailout'};
+        var _algorithm, _equation, _center;
+        var _juliaLabel = 'label-julia';
+        var _smbOption  = {index: 1, value: 'smoothbailout', text: 'Smooth Bailout'};
 
         switch (e.target.value) {
           default:
           case 'mandelbrot':
-            algorithm = bailoutAlgo;
-            equation = mandelbrotEquation;
-            center = mandelCenter;
-            enableBlock(julia, juliaLabel);
-            enableOption(coloring, smbOption);
+            _algorithm = bailoutAlgo;
+            _equation  = mandelbrotEquation;
+            _center    = mandelCenter;
+            enableBlock(julia, _juliaLabel);
+            enableOption(coloring, _smbOption);
             break;
           case 'tricorn':
-            algorithm = bailoutAlgo;
-            equation = tricornEquation;
-            center = zeroCenter;
-            disableBlock(julia, juliaLabel);
-            enableOption(coloring, smbOption);
+            _algorithm = bailoutAlgo;
+            _equation  = tricornEquation;
+            _center    = zeroCenter;
+            disableBlock(julia, _juliaLabel);
+            enableOption(coloring, _smbOption);
             break;
           case 'burning':
-            algorithm = bailoutAlgo;
-            equation = burningEquation;
-            center = burningCenter;
-            disableBlock(julia, juliaLabel);
-            enableOption(coloring, smbOption);
+            _algorithm = bailoutAlgo;
+            _equation  = burningEquation;
+            _center    = burningCenter;
+            disableBlock(julia, _juliaLabel);
+            enableOption(coloring, _smbOption);
             break;
           case 'newton':
-            algorithm = newtonAlgo;
-            equation = newtonEquation;
-            center = zeroCenter;
-            disableBlock(julia, juliaLabel);
-            disableOption(coloring, smbOption);
+            _algorithm = newtonAlgo;
+            _equation  = newtonEquation;
+            _center    = zeroCenter;
+            disableBlock(julia, _juliaLabel);
+            disableOption(coloring, _smbOption);
             break;
         }
-        display.coloring.algorithm = algorithm;
-        display.coloring.algorithm.equation = equation;
-
+        display.coloring.algorithm          = _algorithm;
+        display.coloring.algorithm.equation = _equation;
+        display.coloring.algorithm.c        = undefined;
+        display.coloring.algorithm.maxIter  = 40;
+        iterations.value                    = 40;
         // TODO init values on top
-        display.coloring.algorithm.c = undefined;
-        display.coloring.algorithm.maxIter = 40;
-        iterations.value = 40;
         display.picture.setRange({re:3, im:3});
-        display.picture.setCenter(center);
-
+        display.picture.setCenter(_center);
         display.refresh();
       };
 
       var setColoring = function(e) {
-        var radius, coloring;
-        var paletteLabel  = 'label-palette';
-        var newtonOption  = {index: 3, value: 'newton', text: 'Newton'};
+        var _radius, _coloring;
+        var _paletteLabel  = 'label-palette';
+        var _newtonOption  = {index: 3, value: 'newton', text: 'Newton'};
 
         switch (e.target.value) {
           default:
           case 'bailout':
             // TODO init values on top
-            radius = 4;
-            coloring = bailoutColoring;
-            enableOption(equation, newtonOption);
-            enableBlock(palette, paletteLabel);
+            _radius   = 4;
+            _coloring = bailoutColoring;
+            enableOption(equation, _newtonOption);
+            enableBlock(palette, _paletteLabel);
             break;
           case 'smoothbailout':
-            radius = 1 << 16;
-            coloring = smoothBailoutColoring;
-            disableOption(equation, newtonOption);
-            enableBlock(palette, paletteLabel);
+            _radius   = 1 << 16;
+            _coloring = smoothBailoutColoring;
+            disableOption(equation, _newtonOption);
+            enableBlock(palette, _paletteLabel);
             break;
           case 'binary':
-            radius = 1 << 16;
-            coloring = binaryColoring;
-            enableOption(equation, newtonOption);
-            disableBlock(palette, paletteLabel);
+            _radius   = 1 << 16;
+            _coloring = binaryColoring;
+            enableOption(equation, _newtonOption);
+            disableBlock(palette, _paletteLabel);
             break;
           case 'angle':
-            radius = 4;
-            coloring = angleColoring;
-            enableOption(equation, newtonOption);
-            enableBlock(palette, paletteLabel);
+            _radius   = 4;
+            _coloring = angleColoring;
+            enableOption(equation, _newtonOption);
+            enableBlock(palette, _paletteLabel);
             break;
           case 'simple':
-            radius = 4;
-            coloring = simpleColoring;
-            enableOption(equation, newtonOption);
-            disableBlock(palette, paletteLabel);
+            _radius   = 4;
+            _coloring = simpleColoring;
+            enableOption(equation, _newtonOption);
+            disableBlock(palette, _paletteLabel);
             break;
         }
         // Saving old coloring params in new coloring
-        coloring.algorithm = display.coloring.algorithm;
-        coloring.palette = display.coloring.palette;
+        _coloring.algorithm = display.coloring.algorithm;
+        _coloring.palette   = display.coloring.palette;
         // Affecting new coloring
-        display.coloring = coloring;
-        display.coloring.algorithm.radius = radius;
+        display.coloring                  = _coloring;
+        display.coloring.algorithm.radius = _radius;
         display.refresh();
       };
 
       var setPalette = function(e) {
-        var palette;
+        var _palette;
         switch (e.target.value) {
           default:
           case 'night':
-           palette = night;
+           _palette = night;
            break;
           case 'rainbow':
-           palette = rainbow;
+           _palette = rainbow;
            break;
           case 'fire':
-           palette = fire;
+           _palette = fire;
            break;
           case 'sky':
-           palette = sky;
+           _palette = sky;
            break;
           case 'blacknwhite':
-           palette = blacknwhite;
+           _palette = blacknwhite;
            break;
         }
-        display.coloring.palette = palette;
+        display.coloring.palette = _palette;
         display.refresh();
       };
 
       var setJulia = function(e) {
-        var c;
+        var _c;
         switch (e.target.value) {
           default:
           case '':
-            c = undefined;
+            _c = undefined;
           break;
           case 'set1':
-            c = c1;
+            _c = c1;
             break;
           case 'set2':
-            c = c2;
+            _c = c2;
             break;
           case 'set3':
-            c = c3;
+            _c = c3;
             break;
           case 'set4':
-            c = c4;
+            _c = c4;
             break;
           case 'set5':
-            c = c5;
+            _c = c5;
             break;
           case 'set6':
-            c = c6;
+            _c = c6;
             break;
         }
-        display.coloring.algorithm.c = c;
-        display.picture.setRange({re:3, im:3}).setCenter(new f.Complex());
+        display.coloring.algorithm.c = _c;
+        display.picture.setRange({re:3, im:3}).setCenter(zeroCenter);
         display.refresh();
       };
 
       var setIterations = function(e) {
-        if (iterations.value > 1) {
+        if (iterations.value > 1 && (e.keyCode === 0 || e.keyCode === 13)) {
           display.coloring.algorithm.maxIter = iterations.value;
           display.refresh();
         }
       };
 
-      /****** List functions *******/
+      /****** Listener functions *******/
 
       var disableBlock = function(element, label) {
         element.style.display = 'none';
@@ -369,13 +368,13 @@
       };
 
       var enableOption = function(element, params) {
-        var option;
+        var _option;
         if ((!element.options[params.index])
            || element.options[params.index].value != params.value) {
-          option = document.createElement("option");
-          option.text = params.text;
-          option.value = params.value;
-          element.options.add(option, params.index);
+          _option = document.createElement("option");
+          _option.text = params.text;
+          _option.value = params.value;
+          element.options.add(_option, params.index);
         }
       };
 
@@ -383,14 +382,15 @@
 
       display.refresh();
 
-      iterations.value = display.coloring.algorithm.maxIter;
-
       canvas.addEventListener('click', setZoom, false);
       equation.addEventListener('change', setEquation, false);
       coloring.addEventListener('change', setColoring, false);
       palette.addEventListener('change', setPalette, false);
       julia.addEventListener('change', setJulia, false);
       button.addEventListener('click', setIterations, false);
+      iterations.addEventListener('keypress', setIterations, false);
+
+      iterations.value = display.coloring.algorithm.maxIter;
     })();
     </script>
   </body>
