@@ -67,3 +67,21 @@ var display = new jFractal.StandardDisplay(
 * SmoothBailoutColoring
 * AngleColoring
 * BinaryColoring
+
+## Examples
+
+![Mandelbrot set](http://i.imgur.com/AZ3o42d.png)
+
+![Burning ship set](http://i.imgur.com/B6zCrIi.png)
+
+![Newton set](http://i.imgur.com/7dMEMpZ.png)
+
+![Julia set](http://i.imgur.com/3dFD0Tk.png)
+
+![Julia set](http://i.imgur.com/j6vNBpf.png)
+
+![Mandelbrot set](http://i.imgur.com/jkMD5QD.png)
+
+![Julia set](http://i.imgur.com/vbKYnlc.png)
+
+![Newton set](http://i.imgur.com/6ROMN4l.png)
