@@ -27,9 +27,7 @@ It depends on the [jPalette](https://github.com/jsrdescamps/jpalette) library.
 var display = new jFractal.StandardDisplay(
     new jFractal.Picture(
       document.getElementById('fractal'),
-      new jFractal.Complex(-0.7, 0),
-      {re:3, im:3},
-      true
+      {left:-2.5, right:0.5, bottom:-1.5, top:1.5, keepRatio: true}
     ),
     new jFractal.SmoothBailoutColoring(
       new jFractal.BailoutAlgo(new jFractal.MandelbrotEquation(), 40,  1 << 16),
