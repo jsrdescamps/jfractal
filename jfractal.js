@@ -142,47 +142,6 @@
   };
 
   /**
-   * Convert the complex into a Point.
-   *
-   * @param  {Object} factor - {x: val, y: val}
-   * @param  {Object} origin - {x: val, y: val}
-   * @return {Point}
-   */
-  Complex.prototype.getPoint = function(factor, origin) {
-    return new Point(
-      (factor.x * origin.x + this.re) / factor.x,
-      (factor.y * origin.y - this.im) / factor.y
-    );
-  };
-
-  /**
-   * 2D point class.
-   *
-   * @constructor
-   * @memberof jFractal
-   * @param  {number} x - X coordinate
-   * @param  {number} y - Y coordinate
-   */
-  var Point = function(x, y) {
-    this.x = x || 0;
-    this.y = y || 0;
-  };
-
-  /**
-   * Convert to complex.
-   *
-   * @param  {Object} factor - {x: val, y: val}
-   * @param  {Object} point  - {x: val, y: val}
-   * @return {Complex}
-   */
-  Point.prototype.toComplex = function(factor, point) {
-    return new Complex(
-      factor.x * (this.x - point.x),
-      factor.y * (point.y - this.y)
-    );
-  };
-
-  /**
    * Bailout fractal algorithm.
    *
    * @constructor
@@ -548,25 +507,170 @@
   };
 
   /**
+   * Transform constructor.
+   *
+   * @param  {array} m Parameters
+   */
+  var Transform = function(m) {
+    if (m) {
+        this.m = m;
+    } else {
+        this.reset();
+    }
+  };
+
+  /**
+   * Return a copy.
+   *
+   * @return {Transform} [description]
+   */
+  Transform.prototype.getCopy = function() {
+    return new Transform(this.m.slice(0));
+  };
+
+  /**
+   * Reset parameters.
+   *
+   * @return {Transform}
+   */
+  Transform.prototype.reset = function() {
+    this.m = [1,0,0,1,0,0];
+
+    return this;
+  };
+
+  /**
+   * Multiply transforms.
+   *
+   * @param  {Transform} matrix
+   * @return {Transform}
+   */
+  Transform.prototype.multiply = function(matrix) {
+    var m11 = this.m[0] * matrix.m[0] + this.m[2] * matrix.m[1];
+    var m12 = this.m[1] * matrix.m[0] + this.m[3] * matrix.m[1];
+
+    var m21 = this.m[0] * matrix.m[2] + this.m[2] * matrix.m[3];
+    var m22 = this.m[1] * matrix.m[2] + this.m[3] * matrix.m[3];
+
+    var dx = this.m[0] * matrix.m[4] + this.m[2] * matrix.m[5] + this.m[4];
+    var dy = this.m[1] * matrix.m[4] + this.m[3] * matrix.m[5] + this.m[5];
+
+    this.m[0] = m11;
+    this.m[1] = m12;
+    this.m[2] = m21;
+    this.m[3] = m22;
+    this.m[4] = dx;
+    this.m[5] = dy;
+
+    return this;
+  };
+
+  /**
+   * Invert current transform.
+   *
+   * @return {Transform}
+   */
+  Transform.prototype.invert = function() {
+    var d = 1 / (this.m[0] * this.m[3] - this.m[1] * this.m[2]);
+    var m0 = this.m[3] * d;
+    var m1 = -this.m[1] * d;
+    var m2 = -this.m[2] * d;
+    var m3 = this.m[0] * d;
+    var m4 = d * (this.m[2] * this.m[5] - this.m[3] * this.m[4]);
+    var m5 = d * (this.m[1] * this.m[4] - this.m[0] * this.m[5]);
+    this.m[0] = m0;
+    this.m[1] = m1;
+    this.m[2] = m2;
+    this.m[3] = m3;
+    this.m[4] = m4;
+    this.m[5] = m5;
+
+    return this;
+  };
+
+  /**
+   * Rotation transform.
+   *
+   * @param  {number} rad
+   * @return {Transform}
+   */
+  Transform.prototype.rotate = function(rad) {
+    var c = Math.cos(rad);
+    var s = Math.sin(rad);
+    var m11 = this.m[0] * c + this.m[2] * s;
+    var m12 = this.m[1] * c + this.m[3] * s;
+    var m21 = this.m[0] * -s + this.m[2] * c;
+    var m22 = this.m[1] * -s + this.m[3] * c;
+    this.m[0] = m11;
+    this.m[1] = m12;
+    this.m[2] = m21;
+    this.m[3] = m22;
+
+    return this;
+  };
+
+  /**
+   * Translation transform.
+   *
+   * @param  {number} x
+   * @param  {number} y
+   * @return {Transform}
+   */
+  Transform.prototype.translate = function(x, y) {
+    this.m[4] += this.m[0] * x + this.m[2] * y;
+    this.m[5] += this.m[1] * x + this.m[3] * y;
+
+    return this;
+  };
+
+  /**
+   * Scalign transform.
+   *
+   * @param  {number} sx
+   * @param  {number} sy
+   * @return {Transform}
+   */
+  Transform.prototype.scale = function(sx, sy) {
+    this.m[0] *= sx;
+    this.m[1] *= sx;
+    this.m[2] *= sy;
+    this.m[3] *= sy;
+
+    return this;
+  };
+
+  /**
+   * Transform point with current transform.
+   *
+   * @param  {number} px
+   * @param  {number} py
+   * @return {array}
+   */
+  Transform.prototype.transformPoint = function(px, py) {
+    var x = px;
+    var y = py;
+    px = x * this.m[0] + y * this.m[2] + this.m[4];
+    py = x * this.m[1] + y * this.m[3] + this.m[5];
+
+    return [px, py];
+  };
+
+  /**
    * Picture management class using HTML5 canvas.
    *
    * @constructor
    * @memberof jFractal
    * @param  {Canvas} canvas
-   * @param  {Point} center
-   * @param  {Object} range
-   * @param  {boolean} keepRatio
+   * @param  {Object} parameters
    */
-  var Picture = function(canvas, center, range, keepRatio) {
-   this.canvas    = canvas;
-   this.ctx       = this.canvas.getContext('2d');
+  var Picture = function(canvas, params) {
+   this.ctx       = canvas.getContext('2d');
+   this.width     = canvas.width;
+   this.height    = canvas.height;
    this.imageData = this.ctx.createImageData(canvas.width, canvas.height);
-   this.origin    = new Point(canvas.width  / 2, canvas.height / 2);
-   this.range     = range;
-   this.keepRatio = keepRatio; // TODO Refactor
-   if (keepRatio) { this.autoRange(); }
-   this.scale     = this.computeScale();
-   this.center    = center.getSym().getPoint(this.scale, this.origin);
+   this.transform = this.getTransform(
+       params.left, params.right, params.bottom, params.top, params.keepRatio
+   );
   };
 
   /**
@@ -576,8 +680,8 @@
    * @param  {Color} color
    * @return {Picture}
    */
-  Picture.prototype.setPixel = function(point, color) {
-   var index = (point.x + point.y * this.canvas.width) * 4;
+  Picture.prototype.setPixel = function(px, py, color) {
+   var index = (px + py * this.width) * 4;
    this.imageData.data[index + 0] = color.r;
    this.imageData.data[index + 1] = color.g;
    this.imageData.data[index + 2] = color.b;
@@ -598,139 +702,128 @@
   };
 
   /**
-   * Compute the picture scaling factor.
+   * Window to viewport affine transform.
    *
-   * @return {Object}
+   * @param  {number} left
+   * @param  {number} right
+   * @param  {number} bottom
+   * @param  {number} top
+   * @param  {boolean} keepRatio
+   * @return {Transform}
    */
-  Picture.prototype.computeScale = function() {
-    return {
-      x: (this.range.re / this.canvas.width),
-      y: (this.range.im / this.canvas.height)
-    };
-  };
+  Picture.prototype.getTransform = function(left, right, bottom, top, keepRatio) {
+    var displayAspect, windowAspect, excess;
+    var transform = new Transform();
 
-  /**
-   * Refresh the picture scaling factor.
-   *
-   * @return {Picture}
-   */
-  Picture.prototype.rescale = function() {
-    this.scale = this.computeScale();
+    if (keepRatio) {
+      displayAspect = Math.abs(this.height / this.width);
+      windowAspect = Math.abs((top - bottom) / (right - left));
 
-    return this;
-  };
-
-  /**
-   * Automatic range computation.
-   *
-   * @return {Picture}
-   */
-  Picture.prototype.autoRange = function() {
-    var that = this,
-        algo = function(arg1, arg2) {
-      if (arg1 > arg2) {
-        that.range.re *= arg1 / arg2;
-      } else if (arg1 < arg2) {
-        that.range.im *= arg2 / arg1;
+      if (displayAspect > windowAspect) {
+        // Expand the viewport vertically.
+        excess = (top - bottom) * (displayAspect / windowAspect - 1);
+        top += excess / 2;
+        bottom -= excess / 2;
+      } else if (displayAspect < windowAspect) {
+        // Expand the viewport vertically.
+        excess = (right - left) * (windowAspect / displayAspect - 1);
+        right += excess / 2;
+        left -= excess / 2;
       }
-    };
-    algo(this.range.im, this.range.re);
-    algo(this.canvas.width, this.canvas.height);
-
-    return this;
-  };
-
-  /**
-   * Convert Point to Complex.
-   *
-   * @param  {Point} point
-   * @return {Complex}
-   */
-  Picture.prototype.toComplex = function(point) {
-    return point.toComplex(this.scale, this.center);
-  };
-
-  /**
-   * Return the picture center.
-   *
-   * @return {Point}
-   */
-  Picture.prototype.getCenter = function() {
-    return this.center.toComplex(this.scale, this.origin).getSym();
-  };
-
-  /**
-   * Set the picture center.
-   *
-   * @param  {Point} center
-   * @return {Picture}
-   */
-  Picture.prototype.setCenter = function(center) {
-    if (center instanceof Point) {
-      center = this.toComplex(center);
     }
-    this.center = center.getSym().getPoint(this.scale, this.origin);
+    transform.scale(this.width / (right - left), this.height / (bottom - top));
+    transform.translate(-left, -top);
+
+    return transform;
+  };
+
+ /**
+  * Invert the current affine transform.
+  *
+  * @returns {Picture}
+  */
+  Picture.prototype.invertTransform = function() {
+    this.invTransform = this.transform.getCopy().invert();
 
     return this;
   };
 
-  /**
-   * Set the picture range.
-   *
-   * @param  {Object} range
-   * @return {Picture}
-   */
-  Picture.prototype.setRange = function(range) {
-    this.range = range;
-    if (this.keepRatio) { this.autoRange(); }
-    this.rescale();
+ /**
+  * Convert viewport point to complex number.
+  *
+  * @param {number} x coordinate
+  * @param {number} y coordinate
+  * @returns {Complex}
+  */
+  Picture.prototype.getComplex = function(px, py) {
+    var z;
+
+    if (this.invTransform) {
+      z = this.invTransform.transformPoint(px, py);
+
+      return new Complex(z[0], z[1]);
+    }
+    throw 'Inverted transform not defined';
+  };
+
+ /**
+  * Window to viewport parameters
+  *
+  * @param {Object} Parameters: left, right, bottom, top
+  * @returns {Picture}
+  */
+  Picture.prototype.setParams = function(params) {
+    this.transform = this.getTransform(
+      params.left, params.right, params.bottom, params.top, params.keepRatio
+    );
+    return this;
+  };
+
+ /**
+  * Zooming method.
+  * @param  {number} canvas x point
+  * @param  {number} canvas y point y
+  * @param  {number} factor
+  * @return {Picture}
+  */
+  Picture.prototype.zoom = function(px, py, factor) {
+    var zc = this.getComplex(px, py);
+    var zo = this.getComplex(parseInt(this.width/2), parseInt(this.height/2));
+
+    this.transform.translate(zo.re, zo.im);
+    this.transform.scale(factor, factor);
+    this.transform.translate(-zc.re, -zc.im);
 
     return this;
   };
 
-  /**
-   * Zooming method.
-   *
-   * @param  {number} factor
-   * @return {Picture}
-   */
-  Picture.prototype.zoom = function(factor) {
-    this.range.re /= factor; // TODO Do not modify range !!!
-    this.range.im /= factor;
-    this.center.x  = this.origin.x * (1 - factor) + this.center.x * factor;
-    this.center.y  = this.origin.y * (1 - factor) + this.center.y * factor;
-    this.rescale(); // No autoRange() because same factor for re and im
-
-    return this;
-  };
-
-  /**
-   * Standard display.
-   *
-   * @constructor
-   * @memberof jFractal
-   * @param  {Picture} picture
-   * @param  {Coloring} coloring
-   */
+ /**
+  * Standard display.
+  *
+  * @constructor
+  * @memberof jFractal
+  * @param  {Picture} picture
+  * @param  {Coloring} coloring
+  */
   var StandardDisplay = function(picture, coloring) {
     this.picture  = picture;
     this.coloring = coloring;
   };
 
   /**
-   * Refresh display method.
-   *
-   * @return {StandardDisplay} [description]
-   */
+  * Refresh display method.
+  *
+  * @return {StandardDisplay} [description]
+  */
   StandardDisplay.prototype.refresh = function() {
-    var x, y, point, canvas = this.picture.canvas;
+    var x, y;
+    this.picture.invertTransform();
 
-    for (y = 0; y < canvas.height; y++) {
-      for (x = 0; x < canvas.width; x++) {
+    for (y = 0; y < this.picture.height; y++) {
+      for (x = 0; x < this.picture.width; x++) {
         this.picture.setPixel(
-          point = new Point(x ,y),
-          this.coloring.getColor(
-            point.toComplex(this.picture.scale, this.picture.center)));
+          x, y, this.coloring.getColor(this.picture.getComplex(x, y))
+        );
       }
     }
     this.picture.draw();
@@ -739,75 +832,74 @@
   };
 
   /**
-   * Progressive display (adam7).
-   *
-   * @constructor
-   * @param  {Picture} picture
-   * @param  {Coloring} coloring
-   */
+  * Progressive display (adam7).
+  *
+  * @constructor
+  * @param  {Picture} picture
+  * @param  {Coloring} coloring
+  */
   var ProgressiveDisplay = function(picture, coloring) {
     this.picture  = picture;
     this.coloring = coloring;
   };
 
   /**
-   * Refresh display method.
-   *
-   * @return {StandardDisplay} [description]
-   */
+  * Refresh display method.
+  *
+  * @return {StandardDisplay} [description]
+  */
   ProgressiveDisplay.prototype.refresh = function() {
+    this.picture.invertTransform();
     var pixelSize = {x:8, y:8},
-        canvas    = this.picture.canvas,
-        cache     = ProgressiveDisplay.initCache(canvas.height, canvas.width),
-        pass      = 7,
-        that      = this,
-        animate   = function() {
-          if ((pass = that.draw(pixelSize, cache, pass)) > 0) {
-            requestAnimationFrame(animate);
-          }
-        };
+    cache     = ProgressiveDisplay.initCache(this.picture.height, this.picture.width),
+    pass      = 7,
+    that      = this,
+    animate   = function() {
+      if ((pass = that.draw(pixelSize, cache, pass)) > 0) {
+        requestAnimationFrame(animate);
+      }
+    };
     requestAnimationFrame(animate);
 
     return this;
   };
 
-  /**
-   * Cache initialization.
-   *
-   * @private
-   * @param  {number} rows
-   * @param  {number} columns
-   * @return {array}
-   */
+ /**
+  * Cache initialization.
+  *
+  * @private
+  * @param  {number} rows
+  * @param  {number} columns
+  * @return {array}
+  */
   ProgressiveDisplay.initCache = function(rows, columns) {
-      var a, i, j, matrix = [];
+    var a, i, j, matrix = [];
 
-      for (i = 0; i < rows; i++) {
-          a = [];
-          for (j = 0; j < columns; j++) {
-              a[j] = { computed: false, color: null };
-          }
-          matrix[i] = a;
+    for (i = 0; i < rows; i++) {
+      a = [];
+      for (j = 0; j < columns; j++) {
+        a[j] = { computed: false, color: null };
       }
-      return matrix;
+      matrix[i] = a;
+    }
+    return matrix;
   };
 
   /**
-   * Return a color for a given point.
-   *
-   * @param  {Point} point
-   * @param  {number} pixelSize
-   * @param  {array} cache
-   * @return {Color}
-   */
-  ProgressiveDisplay.prototype.getColor = function(point, pixelSize, cache) {
-    var x = point.x, y = point.y, color;
+  * Return a color for a given point.
+  *
+  * @param  {Point} point
+  * @param  {number} pixelSize
+  * @param  {array} cache
+  * @return {Color}
+  */
+  ProgressiveDisplay.prototype.getColor = function(x, y, pixelSize, cache) {
+    var color;
 
     if (y % pixelSize.y === 0) {
       if (x % pixelSize.x === 0) {
         if (!cache[y][x].computed) {
-          color = this.coloring.getColor(
-            point.toComplex(this.picture.scale, this.picture.center));
+          color = this.coloring.getColor(this.picture.getComplex(x, y));
           cache[y][x].computed = true;
           cache[y][x].color = color;
         } else {
@@ -824,21 +916,22 @@
   };
 
   /**
-   * Drawing method.
-   *
-   * @param  {number} pixelSize
-   * @param  {array} cache
-   * @param  {number} pass
-   * @return {number}
-   */
+  * Drawing method.
+  *
+  * @param  {number} pixelSize
+  * @param  {array} cache
+  * @param  {number} pass
+  * @return {number}
+  */
   ProgressiveDisplay.prototype.draw = function(pixelSize, cache, pass) {
-    var x, y, point, canvas = this.picture.canvas;
+    var x, y;
 
-    for (y = 0; y < canvas.height; y++) {
-      for (x = 0; x < canvas.width; x++) {
+    for (y = 0; y < this.picture.height; y++) {
+      for (x = 0; x < this.picture.width; x++) {
         this.picture.setPixel(
-          point = new Point(x ,y),
-          this.getColor(point, pixelSize, cache));
+          x, y,
+          this.getColor(x, y, pixelSize, cache)
+        );
       }
     }
     this.picture.draw();
@@ -852,7 +945,6 @@
 
   // Declare classes into namespace
   namespace.Picture               = Picture;
-  namespace.Point                 = Point;
   namespace.Complex               = Complex;
   namespace.BailoutAlgo           = BailoutAlgo;
   namespace.NewtonAlgo            = NewtonAlgo;
