@@ -153,12 +153,12 @@
        smoothBailoutColoring = new f.SmoothBailoutColoring(bailoutAlgo, black, night);
        angleColoring         = new f.AngleColoring(bailoutAlgo, black, night);
        binaryColoring        = new f.BinaryColoring(bailoutAlgo, black, white, black),
-       // Some fractal centers
-       zeroCenter    = new f.Complex(0, 0);
-       mandelCenter  = new f.Complex(-0.7, 0);
-       burningCenter = new f.Complex(0.5, 0.5);
+       // Some fractal window ranges
+       zeroParams    = {left:-1.5, right:1.5, bottom:-1.5, top:1.5, keepRatio: true};
+       mandelParams  = {left:-2.5, right:0.5, bottom:-1.5, top:1.5, keepRatio: true};
+       burningParams = {left:-1, right:2, bottom:-1, top:2, keepRatio: true};
        // General
-       picture = new f.Picture(canvas, mandelCenter, {re:3, im:3}, true),
+       picture = new f.Picture(canvas, mandelParams),
        display = new f.ProgressiveDisplay(picture, bailoutColoring),
        // Julia sets
        c1 = new f.Complex(0.285, 0.01),
@@ -183,16 +183,17 @@
         _x -= canvas.offsetLeft;
         _y -= canvas.offsetTop;
 
-        return new f.Point(_x, _y);
+        return [_x, _y];
       };
 
       var setZoom = function(e) {
-        display.picture.setCenter(getCursorPosition(e)).zoom(2);
+        p = getCursorPosition(e);
+        display.picture.zoom(p[0], p[1], 2);
         display.refresh();
       };
 
       var setEquation = function(e) {
-        var _algorithm, _equation, _center;
+        var _algorithm, _equation, _params;
         var _juliaLabel = 'label-julia';
         var _smbOption  = {index: 1, value: 'smoothbailout', text: 'Smooth Bailout'};
 
@@ -201,28 +202,28 @@
           case 'mandelbrot':
             _algorithm = bailoutAlgo;
             _equation  = mandelbrotEquation;
-            _center    = mandelCenter;
+            _params    = mandelParams;
             enableBlock(julia, _juliaLabel);
             enableOption(coloring, _smbOption);
             break;
           case 'tricorn':
             _algorithm = bailoutAlgo;
             _equation  = tricornEquation;
-            _center    = zeroCenter;
+            _params    = zeroParams;
             disableBlock(julia, _juliaLabel);
             enableOption(coloring, _smbOption);
             break;
           case 'burning':
             _algorithm = bailoutAlgo;
             _equation  = burningEquation;
-            _center    = burningCenter;
+            _params    = burningParams;
             disableBlock(julia, _juliaLabel);
             enableOption(coloring, _smbOption);
             break;
           case 'newton':
             _algorithm = newtonAlgo;
             _equation  = newtonEquation;
-            _center    = zeroCenter;
+            _params    = zeroParams;
             disableBlock(julia, _juliaLabel);
             disableOption(coloring, _smbOption);
             break;
@@ -233,8 +234,7 @@
         display.coloring.algorithm.maxIter  = 40;
         iterations.value                    = 40;
         // TODO init values on top
-        display.picture.setRange({re:3, im:3});
-        display.picture.setCenter(_center);
+        display.picture.setParams(_params);
         display.refresh();
       };
 
@@ -337,7 +337,7 @@
             break;
         }
         display.coloring.algorithm.c = _c;
-        display.picture.setRange({re:3, im:3}).setCenter(zeroCenter);
+        display.picture.setParams(zeroParams)
         display.refresh();
       };
 
