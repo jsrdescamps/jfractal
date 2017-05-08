@@ -781,6 +781,7 @@
 
  /**
   * Zooming method.
+  *
   * @param  {number} canvas x point
   * @param  {number} canvas y point y
   * @param  {number} factor
@@ -810,7 +811,7 @@
     this.coloring = coloring;
   };
 
-  /**
+ /**
   * Refresh display method.
   *
   * @return {StandardDisplay} [description]
@@ -831,7 +832,7 @@
     return this;
   };
 
-  /**
+ /**
   * Progressive display (adam7).
   *
   * @constructor
@@ -843,7 +844,7 @@
     this.coloring = coloring;
   };
 
-  /**
+ /**
   * Refresh display method.
   *
   * @return {StandardDisplay} [description]
@@ -885,7 +886,7 @@
     return matrix;
   };
 
-  /**
+ /**
   * Return a color for a given point.
   *
   * @param  {Point} point
@@ -915,7 +916,7 @@
     return color;
   };
 
-  /**
+ /**
   * Drawing method.
   *
   * @param  {number} pixelSize
