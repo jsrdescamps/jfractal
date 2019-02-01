@@ -8,14 +8,35 @@ A small javascript library to generate 2D fractals using HTML5 canvas and a lot 
 
 It depends on the [jPalette](https://github.com/jsrdescamps/jpalette) library.
 
-## How to use
+## How to install
 
-### Include
+## Node.js
+
+```bash
+npm install --save jpalette jfractal
+```
+
+## Download
+
+Just download repositories jPalette and jFractal.
+
+## How to import
+
+### ES6 import
+
+```javascript
+import * as jPalette from 'jpalette';
+import * as jFractal from 'jfractal';
+```
+
+### HTML script tag
 
 ```html
-<script src="jpalette.js"></script>
-<script src="jfractal.js"></script>
+<script src="jpalette.min.js"></script>
+<script src="jfractal.min.js"></script>
 ```
+
+## How to use
 
 ### Basic example
 
@@ -24,7 +45,7 @@ It depends on the [jPalette](https://github.com/jsrdescamps/jpalette) library.
 ```
 
 ```javascript
-var display = new jFractal.StandardDisplay(
+let display = new jFractal.StandardDisplay(
     new jFractal.Picture(
       document.getElementById('fractal'),
       {left:-2.5, right:0.5, bottom:-1.5, top:1.5, keepRatio: true}
@@ -45,6 +66,7 @@ var display = new jFractal.StandardDisplay(
 
 * SimpleDisplay
 * ProgressiveDisplay
+* ThreadedDisplay (worker.min.js must be in the same directory as your index.html)
 
 ### Algorithm
 
