@@ -1,74 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>jFractal library demo page</title>
-  <meta name="description" content="jFractal library demo page">
-  <meta name="author" content="Julien Descamps">
-  <style>
-  body {
-    width: 1000px;
-    margin: 0 auto;
-    font-family: Verdana, Geneva, sans-serif;
-  }
-  main {
-    background-color: #eee;
-    border: 1px solid #bbb;
-    padding: 5px;
-    height: 552px;
-    border-radius: 5px;
-  }
-  canvas {
-    float: left;
-    width: 750px;
-    height: 550px;
-    border: 1px solid #bbb;
-    border-radius: 5px;
-  }
-  form {
-    float: right;
-    width: 200px;
-    border: 1px solid #bbb;
-    height: 550px;
-    background-color: #eee;
-    padding: 0 15px;
-    border-radius: 5px;
-  }
-  select, input {
-    width: 100%;
-  }
-  h2 {
-    text-align: center;
-  }
-  label {
-    display: block;
-    font-weight: bold;
-  }
-  #iterations {
-    width: 50px;
-  }
-  </style>
-</head>
-<body>
-  <header>
-    <h1>jFractal library demo page</h1>
-  </header>
-  <main>
-    <canvas id="fractal" width="750" height="550"></canvas>
-    <form onsubmit="return false;">
+  <head>
+    <meta charset="utf-8" />
+    <title>jFractal library demo page</title>
+    <meta name="description" content="jFractal library demo page" />
+    <meta name="author" content="Julien Descamps" />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+
+      body,
+      html {
+        height: 100%;
+        font-family: Verdana, Geneva, sans-serif;
+        color: white;
+      }
+
+      #fractal {
+        position: absolute;
+      }
+
+      #params {
+        position: absolute;
+        border-radius: 8px;
+        top: 20px;
+        left: 20px;
+        width: 200px;
+        background-color: rgba(10, 10, 10, 0.5);
+        padding: 15px;
+      }
+
+      h1 {
+        display: none;
+      }
+
+      em {
+        font-size: 0.8em;
+      }
+
+      p {
+        padding: 10px;
+      }
+
+      select,
+      input {
+        width: 100%;
+      }
+
+      h2 {
+        text-align: center;
+      }
+
+      label {
+        display: block;
+        font-weight: bold;
+      }
+
+      #iterations {
+        width: 50px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>jFractal demonstration</h1>
+    <canvas id="fractal"></canvas>
+    <form id="params" onsubmit="return false;">
       <h2>Parameters</h2>
-      <p><em>Click on the picture to zoom into the fractal.</em></p>
       <p>
+        <em>Click on the picture to zoom into the fractal.</em>
+      </p>
+      <p id="p-view">
+        <label for="view" id="label-view">Display</label>
+        <select id="view" name="view">
+          <option value="standard">Standard</option>
+          <option value="progressive">Progressive (Adam7)</option>
+          <option value="threaded">Multi-threaded</option>
+        </select>
+      </p>
+      <p id="p-threads">
+        <label for="threads" id="label-threads">Number of threads</label>
+        <select id="threads" name="threads">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+        </select>
+      </p>
+      <p id="p-equation">
         <label for="equation" id="label-equation">Equation</label>
         <select id="equation" name="equation">
           <option value="mandelbrot">Mandelbrot</option>
+          <option value="mandelcubic">Mandelbrot Cubic</option>
+          <option value="mandelquartic">Mandelbrot Quartic</option>
           <option value="tricorn">Tricorn</option>
           <option value="burning">Burning Ship</option>
           <option value="newton">Newton</option>
         </select>
       </p>
-
-      <p>
+      <p id="p-coloring">
         <label for="coloring" id="label-coloring">Coloring</label>
         <select id="coloring" name="coloring">
           <option value="bailout">Simple Bailout</option>
@@ -78,8 +114,7 @@
           <option value="simple">Simple</option>
         </select>
       </p>
-
-      <p>
+      <p id="p-palette">
         <label for="palette" id="label-palette">Palette</label>
         <select id="palette" name="palette">
           <option value="night">Night</option>
@@ -89,8 +124,7 @@
           <option value="blacknwhite">Black N White</option>
         </select>
       </p>
-
-      <p>
+      <p id="p-julia">
         <label for="julia" id="label-julia">Julia Set</label>
         <select id="julia" name="julia">
           <option value="">---</option>
@@ -102,296 +136,19 @@
           <option value="set6">Set 6</option>
         </select>
       </p>
-
-      <p>
+      <p id="p-iterations">
         <label for="iterations" id="label-iterations">Iterations</label>
-        <input type="text" id="iterations">
-        <button type="button" id="button">Go</button>
+        <select id="iterations" name="iterations">
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="200">200</option>
+            <option value="400">400</option>
+            <option value="800">800</option>
+            <option value="1600">1600</option>
+            <option value="3200">3200</option>
+          </select>
       </p>
-      </form>
-    </main>
-
-    <script src="jpalette.js"></script>
-    <script src="jfractal.js"></script>
-
-    <script>
-    (function() {
-
-      /***** Global variables *****/
-
-      var
-       canvas     = document.getElementById('fractal'),
-       equation   = document.getElementById('equation'),
-       coloring   = document.getElementById('coloring'),
-       palette    = document.getElementById('palette'),
-       julia      = document.getElementById('julia'),
-       iterations = document.getElementById('iterations'),
-       button     = document.getElementById('button'),
-       // Namespaces
-       f = jFractal,
-       p = jPalette,
-       // Colors
-       black  = p.Color.get('black')(255),
-       white  = p.Color.get('white')(255),
-       // Palettes
-       night       = p.ColorMap.get('night')(2000),
-       rainbow     = p.ColorMap.get('rainbow')(2000),
-       fire        = p.ColorMap.get('fire')(2000),
-       sky         = p.ColorMap.get('sky')(2000),
-       blacknwhite = p.ColorMap.get('blacknwhite')(2000),
-       // Equations
-       mandelbrotEquation = new f.MandelbrotEquation(),
-       tricornEquation    = new f.TricornEquation(),
-       burningEquation    = new f.BurningShipEquation(),
-       newtonEquation     = new f.NewtonEquation();
-       // Algorithms
-       bailoutAlgo = new f.BailoutAlgo(mandelbrotEquation, 40, 4),
-       newtonAlgo  = new f.NewtonAlgo(newtonEquation, 40, 0.001),
-       // Colorings
-       simpleColoring        = new f.SimpleColoring(bailoutAlgo, black, white);
-       bailoutColoring       = new f.BailoutColoring(bailoutAlgo, black, night);
-       smoothBailoutColoring = new f.SmoothBailoutColoring(bailoutAlgo, black, night);
-       angleColoring         = new f.AngleColoring(bailoutAlgo, black, night);
-       binaryColoring        = new f.BinaryColoring(bailoutAlgo, black, white, black),
-       // Some fractal window ranges
-       zeroParams    = {left:-1.5, right:1.5, bottom:-1.5, top:1.5, keepRatio: true};
-       mandelParams  = {left:-2.5, right:0.5, bottom:-1.5, top:1.5, keepRatio: true};
-       burningParams = {left:-1, right:2, bottom:-1, top:2, keepRatio: true};
-       // General
-       picture = new f.Picture(canvas, mandelParams),
-       display = new f.ProgressiveDisplay(picture, bailoutColoring),
-       // Julia sets
-       c1 = new f.Complex(0.285, 0.01),
-       c2 = new f.Complex(-0.11, 0.6557),
-       c3 = new f.Complex(-0.8, 0.156),
-       c4 = new f.Complex(-0.835, -0.2321),
-       c5 = new f.Complex(-0.70176,-0.3842),
-       c6 = new f.Complex(0, 1);
-
-      /********** Functions **********/
-
-      var getCursorPosition = function (e) {
-        var _x, _y;
-
-        if (e.pageX !== undefined && e.pageY !== undefined) {
-          _x = e.pageX;
-          _y = e.pageY;
-        } else {
-          _x = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
-          _y = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
-        }
-        _x -= canvas.offsetLeft;
-        _y -= canvas.offsetTop;
-
-        return [_x, _y];
-      };
-
-      var setZoom = function(e) {
-        p = getCursorPosition(e);
-        display.picture.zoom(p[0], p[1], 2);
-        display.refresh();
-      };
-
-      var setEquation = function(e) {
-        var _algorithm, _equation, _params;
-        var _juliaLabel = 'label-julia';
-        var _smbOption  = {index: 1, value: 'smoothbailout', text: 'Smooth Bailout'};
-
-        switch (e.target.value) {
-          default:
-          case 'mandelbrot':
-            _algorithm = bailoutAlgo;
-            _equation  = mandelbrotEquation;
-            _params    = mandelParams;
-            enableBlock(julia, _juliaLabel);
-            enableOption(coloring, _smbOption);
-            break;
-          case 'tricorn':
-            _algorithm = bailoutAlgo;
-            _equation  = tricornEquation;
-            _params    = zeroParams;
-            disableBlock(julia, _juliaLabel);
-            enableOption(coloring, _smbOption);
-            break;
-          case 'burning':
-            _algorithm = bailoutAlgo;
-            _equation  = burningEquation;
-            _params    = burningParams;
-            disableBlock(julia, _juliaLabel);
-            enableOption(coloring, _smbOption);
-            break;
-          case 'newton':
-            _algorithm = newtonAlgo;
-            _equation  = newtonEquation;
-            _params    = zeroParams;
-            disableBlock(julia, _juliaLabel);
-            disableOption(coloring, _smbOption);
-            break;
-        }
-        display.coloring.algorithm          = _algorithm;
-        display.coloring.algorithm.equation = _equation;
-        display.coloring.algorithm.c        = undefined;
-        display.coloring.algorithm.maxIter  = 40;
-        iterations.value                    = 40;
-        // TODO init values on top
-        display.picture.setParams(_params);
-        display.refresh();
-      };
-
-      var setColoring = function(e) {
-        var _radius, _coloring;
-        var _paletteLabel  = 'label-palette';
-        var _newtonOption  = {index: 3, value: 'newton', text: 'Newton'};
-
-        switch (e.target.value) {
-          default:
-          case 'bailout':
-            // TODO init values on top
-            _radius   = 4;
-            _coloring = bailoutColoring;
-            enableOption(equation, _newtonOption);
-            enableBlock(palette, _paletteLabel);
-            break;
-          case 'smoothbailout':
-            _radius   = 1 << 16;
-            _coloring = smoothBailoutColoring;
-            disableOption(equation, _newtonOption);
-            enableBlock(palette, _paletteLabel);
-            break;
-          case 'binary':
-            _radius   = 1 << 16;
-            _coloring = binaryColoring;
-            enableOption(equation, _newtonOption);
-            disableBlock(palette, _paletteLabel);
-            break;
-          case 'angle':
-            _radius   = 4;
-            _coloring = angleColoring;
-            enableOption(equation, _newtonOption);
-            enableBlock(palette, _paletteLabel);
-            break;
-          case 'simple':
-            _radius   = 4;
-            _coloring = simpleColoring;
-            enableOption(equation, _newtonOption);
-            disableBlock(palette, _paletteLabel);
-            break;
-        }
-        // Saving old coloring params in new coloring
-        _coloring.algorithm = display.coloring.algorithm;
-        _coloring.palette   = display.coloring.palette;
-        // Affecting new coloring
-        display.coloring                  = _coloring;
-        display.coloring.algorithm.radius = _radius;
-        display.refresh();
-      };
-
-      var setPalette = function(e) {
-        var _palette;
-        switch (e.target.value) {
-          default:
-          case 'night':
-           _palette = night;
-           break;
-          case 'rainbow':
-           _palette = rainbow;
-           break;
-          case 'fire':
-           _palette = fire;
-           break;
-          case 'sky':
-           _palette = sky;
-           break;
-          case 'blacknwhite':
-           _palette = blacknwhite;
-           break;
-        }
-        display.coloring.palette = _palette;
-        display.refresh();
-      };
-
-      var setJulia = function(e) {
-        var _c;
-        switch (e.target.value) {
-          default:
-          case '':
-            _c = undefined;
-          break;
-          case 'set1':
-            _c = c1;
-            break;
-          case 'set2':
-            _c = c2;
-            break;
-          case 'set3':
-            _c = c3;
-            break;
-          case 'set4':
-            _c = c4;
-            break;
-          case 'set5':
-            _c = c5;
-            break;
-          case 'set6':
-            _c = c6;
-            break;
-        }
-        display.coloring.algorithm.c = _c;
-        display.picture.setParams(zeroParams)
-        display.refresh();
-      };
-
-      var setIterations = function(e) {
-        if (iterations.value > 1 && (e.keyCode === 0 || e.keyCode === 13)) {
-          display.coloring.algorithm.maxIter = iterations.value;
-          display.refresh();
-        }
-      };
-
-      /****** Listener functions *******/
-
-      var disableBlock = function(element, label) {
-        element.style.display = 'none';
-        document.getElementById(label).style.display = 'none';
-      };
-
-      var enableBlock = function(element, label) {
-        element.style.display = 'block';
-        document.getElementById(label).style.display = 'block';
-      };
-
-      var disableOption = function(element, params) {
-        if (element.options[params.index]
-         && element.options[params.index].value == params.value) {
-          element.options.remove(params.index);
-        }
-      };
-
-      var enableOption = function(element, params) {
-        var _option;
-        if ((!element.options[params.index])
-           || element.options[params.index].value != params.value) {
-          _option = document.createElement("option");
-          _option.text = params.text;
-          _option.value = params.value;
-          element.options.add(_option, params.index);
-        }
-      };
-
-      /********* Main code *********/
-
-      display.refresh();
-
-      canvas.addEventListener('click', setZoom, false);
-      equation.addEventListener('change', setEquation, false);
-      coloring.addEventListener('change', setColoring, false);
-      palette.addEventListener('change', setPalette, false);
-      julia.addEventListener('change', setJulia, false);
-      button.addEventListener('click', setIterations, false);
-      iterations.addEventListener('keypress', setIterations, false);
-
-      iterations.value = display.coloring.algorithm.maxIter;
-    })();
-    </script>
+    </form>
+    <script src="dist/main.js"></script>
   </body>
 </html>
